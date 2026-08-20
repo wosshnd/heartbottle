@@ -1,399 +1,355 @@
 /* ------------------------------------------------------------------ */
-/*  心灵漂流瓶 · 数据层：类型 / LocalStorage / 种子数据 / 安全过滤      */
+/*  心灵漂流瓶 · 数据层（LocalStorage 模拟，后期可平滑迁移到后端）        */
 /* ------------------------------------------------------------------ */
 
-export type Mood = "焦虑" | "难过" | "迷茫" | "孤独" | "疲惫" | "委屈";
-
-export const MOODS: Mood[] = ["焦虑", "难过", "迷茫", "孤独", "疲惫", "委屈"];
-
-export interface Reply {
+export interface BottleReply {
   id: string;
   content: string;
   timestamp: number;
-  likes: number; // 「感到温暖」次数
-  author: string; // 匿名笔名
+  likes: number;
+  likedByMe: boolean;
+  caring?: boolean; // 危机预案下的「关怀寄语」（预设文案，非自由输入）
 }
 
 export interface Bottle {
   id: string;
   content: string;
   timestamp: number;
-  likes: number; // 「抱抱 TA」次数
-  mood: Mood | null;
-  penName: string;
-  mine?: boolean; // 是否为当前用户所抛（仅本地标记）
-  replies: Reply[];
+  likes: number; // 抱抱数
+  mood?: string;
+  replies: BottleReply[];
 }
 
-export interface UserStats {
-  thrown: number;
-  replied: number;
-  likesGiven: number;
-  aiUsed: number;
+const KEY = "soul-bottle:bottles:v2";
+const STATS_KEY = "soul-bottle:stats:v2";
+
+/* ---------------- 安全风控 · 三级内容检测 ---------------- */
+
+export type RiskLevel = "crisis" | "hard" | "implicit" | "safe";
+
+export interface RiskCheck {
+  level: RiskLevel;
+  matched: string[];
 }
 
-const BOTTLES_KEY = "xlpb:bottles:v1";
-const STATS_KEY = "xlpb:stats:v1";
-
-export function uid(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-export const PEN_NAMES = [
-  "远方的海龟",
-  "打盹的鲸鱼",
-  "迷路的信天翁",
-  "看星星的水母",
-  "晒太阳的海豹",
-  "安静的珊瑚",
-  "路过的海豚",
-  "拾贝的小孩",
-  "慢吞吞的寄居蟹",
-  "数浪花的海獭",
+/** ③ 危险信号（危机干预）：自伤 / 自杀 / 严重抑郁倾向 */
+export const CRISIS_WORDS = [
+  "不想活了",
+  "活着没意思",
+  "结束生命",
+  "割腕",
+  "跳楼",
+  "自杀",
+  "自残",
+  "不想在这个世界",
+  "和世界告别",
+  "跳河",
+  "上吊",
+  "烧炭",
+  "了断",
 ];
 
-export function randomPenName(): string {
-  return PEN_NAMES[Math.floor(Math.random() * PEN_NAMES.length)];
+/** ① 显性攻击 · 脏话类 */
+const PROFANITY = [
+  "傻逼",
+  "傻x",
+  "滚",
+  "去死",
+  "废物",
+  "脑残",
+  "智障",
+  "贱人",
+  "贱货",
+  "狗东西",
+  "蠢货",
+  "畜生",
+  "妈的",
+  "他妈",
+  "狗屎",
+  "下头",
+  "恶心死了",
+];
+
+/** ① 显性攻击 · 威胁类 */
+const THREATS = ["打死你", "等着瞧", "弄死你", "要你好看", "揍死你", "给你点颜色", "小心我", "找人收拾你"];
+
+export const HARD_WORDS = [...PROFANITY, ...THREATS];
+
+/** ② 隐性攻击 / 微霸凌（软伤害 · 重点防范，需 AI 二次审核） */
+export const IMPLICIT_PHRASES = [
+  // 否定感受
+  "这有什么好哭的",
+  "你想太多了",
+  "你就是太闲了",
+  "别矫情",
+  "矫情",
+  "没什么大不了",
+  "这有什么大不了",
+  "至于吗",
+  "太敏感了",
+  "小题大做",
+  "大惊小怪",
+  "这点事",
+  "玻璃心",
+  "太脆弱",
+  "开不起玩笑",
+  // 贴标签
+  "戏精",
+  "怪胎",
+  "不合群",
+  "装可怜",
+  "博同情",
+  "爱哭鬼",
+  "废物点心",
+  // 比较打击
+  "别人都没事",
+  "就你事多",
+  "这点压力都承受不了",
+  "别人都可以",
+  "别人怎么没",
+  "怎么就你这么",
+  "这么没用",
+  // 反问嘲讽
+  "没长脑子",
+  "难道只有你觉得",
+  "有什么好难过",
+  "有什么好伤心",
+  "谁没经历过",
+  "这点委屈都受不了",
+];
+
+/** 需要上下文判断的危机词（避免「释放压力」类误伤） */
+function crisisSpecialHits(text: string): string[] {
+  const hits: string[] = [];
+  if (text.includes("解脱") && !text.includes("释放压力") && !/解脱(压|感)/.test(text)) hits.push("解脱");
+  return hits;
 }
 
-/* ------------------------- 种子数据 ------------------------- */
-
-const h = 3600_000;
-const d = 24 * h;
-
-function seedBottles(): Bottle[] {
-  const now = Date.now();
-  return [
-    {
-      id: uid(),
-      content:
-        "连续加班第三周了，今晚走出公司大门，突然特别想哭。感觉自己像一台不能停的机器，可是我也会有撑不住的时候啊。",
-      timestamp: now - 5 * h,
-      likes: 12,
-      mood: "疲惫",
-      penName: "晒太阳的海豹",
-      replies: [
-        {
-          id: uid(),
-          content:
-            "连轴转了三周，你已经撑了很久很久。今晚允许自己什么都不做，早点回家，洗个热水澡，好吗？",
-          timestamp: now - 4 * h,
-          likes: 9,
-          author: "路过的海豚",
-        },
-        {
-          id: uid(),
-          content: "想哭就哭一会儿吧，眼泪不是软弱，是身体在帮你减压。你已经做得很棒了。",
-          timestamp: now - 3 * h,
-          likes: 5,
-          author: "看星星的水母",
-        },
-      ],
-    },
-    {
-      id: uid(),
-      content:
-        "来到这座城市八个月了，通讯录里有三百个人，却找不到一个可以打电话的人。周末的傍晚最难熬，窗外越热闹，屋里越安静。",
-      timestamp: now - 26 * h,
-      likes: 18,
-      mood: "孤独",
-      penName: "迷路的信天翁",
-      replies: [
-        {
-          id: uid(),
-          content:
-            "一个人在大城市里漂着，真的会辛苦。下次傍晚难过的时候，来海边看看日落吧，晚霞会陪你的。",
-          timestamp: now - 20 * h,
-          likes: 14,
-          author: "安静的珊瑚",
-        },
-        {
-          id: uid(),
-          content: "抱抱你。你愿意把心事写进瓶子，本身就是一种勇敢的联结呀。",
-          timestamp: now - 18 * h,
-          likes: 7,
-          author: "拾贝的小孩",
-        },
-      ],
-    },
-    {
-      id: uid(),
-      content:
-        "考研成绩还有一周就出了，越临近越睡不着。一边怕辜负爸妈，一边又怕面对结果，我是不是太没用了？",
-      timestamp: now - 8 * h,
-      likes: 8,
-      mood: "焦虑",
-      penName: "慢吞吞的寄居蟹",
-      replies: [
-        {
-          id: uid(),
-          content:
-            "备考这段路又长又黑，你已经一步一步走到这里了，这本身就了不起。结果如何，都不影响你这一年的努力发光。",
-          timestamp: now - 6 * h,
-          likes: 6,
-          author: "数浪花的海獭",
-        },
-      ],
-    },
-    {
-      id: uid(),
-      content:
-        "分手第 43 天。路过那家我们常去的面馆，还是没忍住点了两碗。明明说好了要向前走，怎么回忆总是先一步拦住我。",
-      timestamp: now - 2 * d,
-      likes: 15,
-      mood: "难过",
-      penName: "看星星的水母",
-      replies: [
-        {
-          id: uid(),
-          content: "想念不是退步，是认真爱过的证明。两碗面吃完，记得替未来的自己留一点胃口。",
-          timestamp: now - 40 * h,
-          likes: 11,
-          author: "远方的海龟",
-        },
-        {
-          id: uid(),
-          content: "43 天了，你一直在努力向前走，偶尔回头看看也没关系的。",
-          timestamp: now - 36 * h,
-          likes: 4,
-          author: "打盹的鲸鱼",
-        },
-      ],
-    },
-    {
-      id: uid(),
-      content:
-        "32 岁，没房没车没对象，同学聚会不太想去了。别人都在晒娃晒旅行，我好像把日子过成了别人眼里的反面教材。",
-      timestamp: now - 3 * d,
-      likes: 10,
-      mood: "迷茫",
-      penName: "路过的海豚",
-      replies: [
-        {
-          id: uid(),
-          content:
-            "人生不是统一交卷的考试，每个人的时区都不一样。你把日子过成了自己的样子，这就够了。",
-          timestamp: now - 2 * d,
-          likes: 8,
-          author: "安静的珊瑚",
-        },
-      ],
-    },
-    {
-      id: uid(),
-      content:
-        "妈妈今天又在电话里催婚，我挂了电话在楼道里站了好久。不是不想结婚，只是还没等到那个让我安心的人。",
-      timestamp: now - 4 * d,
-      likes: 6,
-      mood: "委屈",
-      penName: "拾贝的小孩",
-      replies: [],
-    },
-    {
-      id: uid(),
-      content:
-        "失眠第七天。凌晨三点盯着天花板，脑子里全是白天没说出口的话。原来安静的时候，心事的声音这么大。",
-      timestamp: now - 50 * h,
-      likes: 4,
-      mood: "疲惫",
-      penName: "数浪花的海獭",
-      replies: [],
-    },
+/**
+ * 三级内容检测：危机信号 → 显性攻击 → 隐性攻击 → 安全。
+ * 隐性攻击命中后，前端会再调用 aiModeration() 做 AI 二次审核。
+ */
+export function checkRisk(text: string): RiskCheck {
+  const crisis = [
+    ...CRISIS_WORDS.filter((w) => text.includes(w)),
+    ...crisisSpecialHits(text),
   ];
+  if (crisis.length) return { level: "crisis", matched: crisis };
+
+  const hard = HARD_WORDS.filter((w) => text.includes(w));
+  if (hard.length) return { level: "hard", matched: hard };
+
+  const implicit = IMPLICIT_PHRASES.filter((p) => text.includes(p));
+  if (implicit.length) return { level: "implicit", matched: implicit };
+
+  return { level: "safe", matched: [] };
 }
 
-/* ----------------------- 读取 / 持久化 ----------------------- */
+/* ---------------- 危机预案 · 心理援助资源 ---------------- */
+
+export interface Hotline {
+  name: string;
+  phone: string;
+  desc: string;
+}
+
+export const HOTLINES: Hotline[] = [
+  {
+    name: "12355 青少年服务台",
+    phone: "12355",
+    desc: "共青团中央 · 专为青少年提供心理与法律咨询",
+  },
+  {
+    name: "北京心理危机研究与干预中心",
+    phone: "010-82951332",
+    desc: "24 小时心理危机干预热线",
+  },
+  {
+    name: "希望 24 热线",
+    phone: "400-161-9995",
+    desc: "全国生命教育与危机干预热线",
+  },
+];
+
+/** 危机瓶子下可发送的预设关怀寄语（不允许自由回复，避免二次伤害） */
+export const CARING_TEMPLATES = [
+  "我认真读完了你的漂流瓶。你正在经历的，绝不是小事，也不需要一个人扛。试着拨一下 12355，电话那头有人真心想听你说。",
+  "谢谢你愿意把这些沉重放进瓶子里。你的存在本身就很重要。如果撑不住，请打 010-82951332，一直都有人在。",
+  "不知道你经历了怎样的夜晚，但你把瓶子抛进海里，说明你还在期待被听见——我听见了。请给 12355 一个机会，也给自己一个机会，好吗？",
+];
+
+/* ---------------- 统计 / 存储 ---------------- */
+
+export interface LifeStats {
+  warmIndex: number;
+  thrownCount: number;
+  receivedLikes: number;
+}
+
+const DEFAULT_STATS: LifeStats = { warmIndex: 0, thrownCount: 0, receivedLikes: 0 };
+
+export function uid(): string {
+  return Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+}
 
 export function loadBottles(): Bottle[] {
   try {
-    const raw = localStorage.getItem(BOTTLES_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw) as Bottle[];
-      if (Array.isArray(parsed)) return parsed;
-    }
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Bottle[];
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    /* 忽略损坏数据 */
+    return [];
   }
-  const seeds = seedBottles();
-  saveBottles(seeds);
-  return seeds;
 }
 
-export function saveBottles(bottles: Bottle[]): void {
+export function saveBottles(list: Bottle[]): void {
   try {
-    localStorage.setItem(BOTTLES_KEY, JSON.stringify(bottles));
+    localStorage.setItem(KEY, JSON.stringify(list));
   } catch {
-    /* 存储已满等异常时静默 */
+    /* 存储已满等异常时静默降级 */
   }
 }
 
-export function loadStats(): UserStats {
-  const base: UserStats = { thrown: 0, replied: 0, likesGiven: 0, aiUsed: 0 };
+export function loadStats(): LifeStats {
   try {
     const raw = localStorage.getItem(STATS_KEY);
-    if (raw) return { ...base, ...(JSON.parse(raw) as Partial<UserStats>) };
+    if (!raw) return { ...DEFAULT_STATS };
+    return { ...DEFAULT_STATS, ...(JSON.parse(raw) as Partial<LifeStats>) };
   } catch {
-    /* ignore */
+    return { ...DEFAULT_STATS };
   }
-  return base;
 }
 
-export function saveStats(stats: UserStats): void {
+export function saveStats(s: LifeStats): void {
   try {
-    localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+    localStorage.setItem(STATS_KEY, JSON.stringify(s));
   } catch {
-    /* ignore */
+    /* noop */
   }
 }
 
-/* ------------------------- 捞瓶逻辑 ------------------------- */
+/** 温暖指数：由抛瓶、回复与点赞累计而成，上限 100 */
+export function computeWarmIndex(s: LifeStats): number {
+  return Math.min(100, Math.round(s.thrownCount * 3 + s.receivedLikes * 4));
+}
 
-/** 随机捞一个瓶子：回复越少的瓶子越容易被捞起，避免重复捞同一个 */
-export function pickBottle(bottles: Bottle[], excludeId?: string | null): Bottle | null {
-  const pool = bottles.filter((b) => b.id !== excludeId);
-  if (pool.length === 0) return null;
-  const weighted: Bottle[] = [];
-  for (const b of pool) {
-    const w = 3 - Math.min(b.replies.length, 2); // 0 回复→3，1 回复→2，≥2→1
-    for (let i = 0; i < w; i++) weighted.push(b);
+/* ---------------- 随机捞瓶（优先捞回复少的瓶子） ---------------- */
+
+export function pickWeightedBottle(bottles: Bottle[]): Bottle | null {
+  if (!bottles.length) return null;
+  const weights = bottles.map((b) => 1 / (b.replies.length + 1));
+  const total = weights.reduce((a, b) => a + b, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < bottles.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return bottles[i];
   }
-  return weighted[Math.floor(Math.random() * weighted.length)];
+  return bottles[bottles.length - 1];
 }
 
-/* ------------------------- 安全过滤 ------------------------- */
+/* ---------------- 时间文案 ---------------- */
 
-const AGGRESSIVE_WORDS = [
-  "傻逼",
-  "贱人",
-  "废物",
-  "白痴",
-  "蠢货",
-  "去死",
-  "该死",
-  "找死",
-  "弄死",
-  "滚蛋",
-  "贱货",
-  "狗东西",
-  "恶心死",
-  "脑残",
-  "弱智",
+/* ---------------- 心情标签 / 温暖档位 / 勋章 ---------------- */
+
+export interface Mood {
+  id: string;
+  label: string;
+  bg: string;
+  dot: string;
+}
+
+export const MOODS: Mood[] = [
+  { id: "tired", label: "有点疲惫", bg: "bg-[#eef1fb] text-[#5f6db0]", dot: "bg-[#8b9bd8]" },
+  { id: "anxious", label: "焦虑中", bg: "bg-[#fdf0e7] text-[#c07b45]", dot: "bg-[#f0a868]" },
+  { id: "sad", label: "低落", bg: "bg-[#e9f4f6] text-[#4f8a94]", dot: "bg-[#7fb9c4]" },
+  { id: "lost", label: "迷茫", bg: "bg-[#f0ecfa] text-[#7d6bb0]", dot: "bg-[#a895d6]" },
+  { id: "ok", label: "只是想说说", bg: "bg-[#e9f6ee] text-[#4f9468]", dot: "bg-[#7fc497]" },
 ];
 
-const CRISIS_WORDS = [
-  "自杀",
-  "自残",
-  "割腕",
-  "跳楼",
-  "不想活",
-  "活着没意思",
-  "结束生命",
-  "轻生",
-  "消失算了",
-  "一了百了",
-  "安乐死",
+export function moodOf(id?: string): Mood | undefined {
+  return MOODS.find((m) => m.id === id);
+}
+
+export interface WarmLevel {
+  min: number;
+  label: string;
+  desc: string;
+}
+
+export const WARM_LEVELS: WarmLevel[] = [
+  { min: 0, label: "微风拂面", desc: "海面平静，正等你投下第一份心事" },
+  { min: 20, label: "晨光微暖", desc: "第一份温暖已经在海里流动" },
+  { min: 40, label: "暖流涌动", desc: "你接住了不少漂流而来的心事" },
+  { min: 60, label: "春日海风", desc: "许多人因为你的回复而被治愈" },
+  { min: 80, label: "人间骄阳", desc: "你就是这片海最亮的光" },
 ];
 
-export type FilterResult =
-  | { ok: true }
-  | { ok: false; kind: "aggressive" | "crisis" };
-
-export function checkContent(text: string): FilterResult {
-  const t = text.toLowerCase();
-  if (CRISIS_WORDS.some((w) => t.includes(w))) return { ok: false, kind: "crisis" };
-  if (AGGRESSIVE_WORDS.some((w) => t.includes(w))) return { ok: false, kind: "aggressive" };
-  return { ok: true };
+export function warmthLabel(v: number): WarmLevel {
+  return [...WARM_LEVELS].reverse().find((l) => v >= l.min) ?? WARM_LEVELS[0];
 }
-
-/* ------------------------- 温暖指数 ------------------------- */
-
-export function computeWarmth(bottles: Bottle[]): {
-  warmth: number;
-  totalReplies: number;
-  totalLikes: number;
-} {
-  const totalReplies = bottles.reduce((s, b) => s + b.replies.length, 0);
-  const totalLikes = bottles.reduce(
-    (s, b) => s + b.likes + b.replies.reduce((r, x) => r + x.likes, 0),
-    0,
-  );
-  const warmth = Math.min(100, 42 + bottles.length * 3 + totalReplies * 2 + totalLikes);
-  return { warmth, totalReplies, totalLikes };
-}
-
-export function warmthLabel(w: number): string {
-  if (w >= 90) return "暖意融融";
-  if (w >= 75) return "温和回暖";
-  if (w >= 60) return "微温";
-  return "微凉";
-}
-
-/* --------------------------- 勋章 --------------------------- */
-
-export type BadgeIconKey = "shell" | "sail" | "lighthouse" | "heart" | "wave" | "star";
 
 export interface BadgeDef {
   id: string;
   name: string;
   desc: string;
-  icon: BadgeIconKey;
-  unlocked: (s: UserStats) => boolean;
+  icon: string; // 图标 key，由前端映射为 SVG
+  unlocked: (bottles: Bottle[], s: LifeStats) => boolean;
 }
 
 export const BADGES: BadgeDef[] = [
   {
-    id: "first-visit",
-    name: "初来乍到",
-    desc: "推开海边的门",
-    icon: "shell",
-    unlocked: () => true,
-  },
-  {
-    id: "sailor",
+    id: "first-throw",
     name: "勇敢的水手",
-    desc: "抛出第 1 个漂流瓶",
+    desc: "抛出第一个漂流瓶",
     icon: "sail",
-    unlocked: (s) => s.thrown >= 1,
+    unlocked: (_b, s) => s.thrownCount >= 1,
   },
   {
-    id: "lighthouse",
+    id: "replier",
     name: "暖心灯塔",
-    desc: "写下第 1 条温暖回复",
+    desc: "回复 3 个漂流瓶",
     icon: "lighthouse",
-    unlocked: (s) => s.replied >= 1,
+    unlocked: (b) => b.filter((x) => x.replies.some((r) => r.likedByMe)).length >= 3,
   },
   {
-    id: "angel",
+    id: "warmer",
     name: "点赞小天使",
     desc: "送出 5 次「感到温暖」",
     icon: "heart",
-    unlocked: (s) => s.likesGiven >= 5,
+    unlocked: (b) => b.reduce((n, x) => n + x.replies.filter((r) => r.likedByMe).length, 0) >= 5,
   },
   {
-    id: "guardian",
-    name: "海洋守护者",
-    desc: "抛瓶与回复累计 5 次",
-    icon: "wave",
-    unlocked: (s) => s.thrown + s.replied >= 5,
-  },
-  {
-    id: "catcher",
-    name: "心灵捕手",
-    desc: "使用 AI 暖言 3 次",
+    id: "liked",
+    name: "被海记住",
+    desc: "收获 3 次「感到温暖」",
     icon: "star",
-    unlocked: (s) => s.aiUsed >= 3,
+    unlocked: (_b, s) => s.receivedLikes >= 3,
+  },
+  {
+    id: "warm-30",
+    name: "暖流使者",
+    desc: "温暖指数达到 30",
+    icon: "sun",
+    unlocked: (_b, s) => computeWarmIndex(s) >= 30,
+  },
+  {
+    id: "caring",
+    name: "守望相助",
+    desc: "送出 1 条关怀寄语",
+    icon: "shield",
+    unlocked: (b) => b.some((x) => x.replies.some((r) => r.caring)),
   },
 ];
 
-/* --------------------------- 工具 --------------------------- */
-
 export function timeAgo(ts: number): string {
   const diff = Date.now() - ts;
-  if (diff < 60_000) return "刚刚";
-  if (diff < h) return `${Math.floor(diff / 60_000)} 分钟前`;
-  if (diff < d) return `${Math.floor(diff / h)} 小时前`;
-  return `${Math.floor(diff / d)} 天前`;
+  const min = Math.floor(diff / 60000);
+  if (min < 1) return "刚刚";
+  if (min < 60) return `${min} 分钟前`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h} 小时前`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d} 天前`;
+  return new Date(ts).toLocaleDateString("zh-CN", { month: "long", day: "numeric" });
 }
