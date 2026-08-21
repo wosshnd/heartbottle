@@ -1147,48 +1147,38 @@ function shrinkDoodle(dataUrl) {
 }
 
 /**
- * 抛瓶子：向 bottles 表插入一条数据（文字 + 灵魂涂鸦）
+ * 抛瓶子：调用后端 /api/bottle（action=throw）写入一条瓶子
  * ------------------------------------------------------------------
- * ⚠️ 前置条件：bottles 表需要有 drawing 列（text 类型，存 Base64 长字符串）。
- *    在 Supabase 控制台 SQL Editor 执行：
- *      alter table public.bottles add column if not exists drawing text;
- *
- *   · 表名严格使用 'bottles'（全小写）
- *   · 组装对象包含 { content, drawing }
- *   · 不链式调用 .select()，插入后直接拿结果
- *   · 插入前打印数据（drawing 太长，只打印前 50 个字符）
- *   · 若 drawing 列还没建好（400），自动降级为只写 content，保证抛瓶不失败
+ *   · 请求体严格为：{ action: "throw", content, mood }
+ *   · 默认在线模式：不再走 Supabase 直连，也不做离线回退
+ *   · 根据返回结果判断成功与否：HTTP 非 2xx 或后端 success===false 即视为失败
  */
-async function throwBottle(content, drawing) {
-  // 1) 组装数据对象：content + drawing（涂鸦 Base64；没画时不传该字段）
-  var data = { content: content };
-  if (drawing) data.drawing = drawing;
+async function throwBottle(content, mood) {
+  // 1) 组装请求体
+  var payload = { action: "throw", content: content, mood: mood || "other" };
+  console.log("准备抛瓶:", payload);
 
-  // 2) 调试日志：确认画画数据到底有没有被获取到
-  console.log('准备存入的数据:', {
-    content: content,
-    drawing: drawing ? (drawing.substring(0, 50) + '...') : '(无涂鸦)'
+  // 2) POST 到后端 /api/bottle
+  var res = await fetch("/api/bottle", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
   });
 
-  // 3) 表名严格 'bottles'；插入后直接返回结果，不链式调用 .select()
-  var result = await sb.from("bottles").insert(data);
-
-  // 4) insert 不会抛异常，数据库错误放在 result.error 里，需要手动检查
-  if (result.error) {
-    console.error('Supabase 报错详情:', result.error);
-
-    // 5) 兜底：drawing 列不存在导致 400 时，降级为只写 content 重试
-    var msg = String(result.error.message || "");
-    if (drawing && (result.error.code === "42703" || msg.indexOf("drawing") >= 0)) {
-      console.warn('⚠️ 数据库还没有 drawing 列，涂鸦本次未同步。请执行：alter table public.bottles add column if not exists drawing text;');
-      if (typeof toast === "function") toast("warn", "涂鸦暂未同步到云端：数据库缺 drawing 列（详见控制台）");
-      var retry = await sb.from("bottles").insert({ content: content });
-      if (retry.error) { console.error('Supabase 报错详情:', retry.error); throw retry.error; }
-      return retry;
-    }
-    throw result.error;
+  // 3) HTTP 层失败（4xx / 5xx）：打印状态与响应体后抛出
+  if (!res.ok) {
+    var errText = "";
+    try { errText = await res.text(); } catch (e) {}
+    console.error("抛瓶失败:", res.status, errText);
+    throw new Error("抛瓶失败 HTTP " + res.status + (errText ? " - " + errText : ""));
   }
-  return result;
+
+  // 4) 解析返回 JSON；业务层失败（后端显式 success: false）也抛出
+  var json = await res.json().catch(function () { return {}; });
+  if (json && json.success === false) {
+    throw new Error(json.message || "后端拒绝了这次抛瓶");
+  }
+  return json;
 }
 
 /**
@@ -1208,36 +1198,34 @@ async function likeCloudBottle(id, likes) {
 }
 
 /**
- * 捞瓶子：从 bottles 表随机取一条
- * 原理：先统计总行数 → 生成随机偏移量 → 只取该偏移处的那一行（全程只传一条数据，省流量）
- * 查询一律使用 select("*")，对表里有哪些列完全不敏感，避免因缺列而 400
- * @returns {Promise<object|null>} 瓶子对象（读 .content 即内容）；空海时返回 null
+ * 捞瓶子：调用后端 /api/bottle（action=fetch）随机取一条
+ * ------------------------------------------------------------------
+ *   · 请求体严格为：{ action: "fetch" }
+ *   · 解析返回的 JSON 数据，交给 cloudToLocal 映射后渲染
+ *   · 兼容后端把瓶子包在 data / bottle 字段里，或直接返回对象
+ * @returns {Promise<object|null>} 瓶子行对象（读 .content 即内容）；空海时返回 null
  */
 async function getRandomBottle() {
-  try {
-    // 第 1 步：head 请求只取行数，不下载数据
-    var { count, error: countError } = await sb
-      .from("bottles")
-      .select("*", { count: "exact", head: true });
-    if (countError) throw countError;
-    if (!count) return null;                        // 海里一个瓶子也没有
+  // POST 到后端 /api/bottle
+  var res = await fetch("/api/bottle", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "fetch" })
+  });
 
-    // 第 2 步：在 [0, count-1] 里随机一个偏移
-    var offset = Math.floor(Math.random() * count);
-
-    // 第 3 步：range(offset, offset) = 只取第 offset 行；maybeSingle 在 0 条时返回 null 而不报错
-    var { data, error } = await sb
-      .from("bottles")
-      .select("*")
-      .range(offset, offset)
-      .maybeSingle();
-    if (error) throw error;
-    return data;                                    // 用 data.content 读瓶子内容
-  } catch (err) {
-    // catch 时打印完整错误对象
-    console.error('Supabase 报错详情:', err);
-    throw err;
+  // HTTP 层失败（4xx / 5xx）：打印状态与响应体后抛出
+  if (!res.ok) {
+    var errText = "";
+    try { errText = await res.text(); } catch (e) {}
+    console.error("捞瓶失败:", res.status, errText);
+    throw new Error("捞瓶失败 HTTP " + res.status + (errText ? " - " + errText : ""));
   }
+
+  // 解析返回的 JSON：兼容 { data }, { bottle }, 或直接对象三种包装
+  var json = await res.json();
+  var row = json && (json.data || json.bottle || json);
+  if (!row || typeof row !== "object" || !row.content) return null;  // 空海
+  return row;
 }
 
 /** 把云端行映射成本地瓶子结构，让现有 UI（信纸卡片、抱抱、回复）无需改动即可渲染 */
@@ -1266,18 +1254,9 @@ function cloudToLocal(row) {
   };
 }
 
-/** 启动时探测一次云端连通性，更新页脚的连接状态 */
-async function cloudPing() {
-  if (!sb) { store.cloudMode = "本地模式（未加载云端 SDK）"; return; }
-  try {
-    // 用 select("*") + head 探测：不依赖表里存在任何特定列（包括 id）
-    var { error } = await sb.from("bottles").select("*", { head: true }).limit(1);
-    if (error) throw error;
-    store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步";
-  } catch (e) {
-    console.error('Supabase 报错详情:', e);
-    store.cloudMode = "🐚 离线模式 · 仅本地存储";
-  }
+/** 启动时标记连接状态：默认在线模式，不再探测 Supabase、不做离线判断 */
+function cloudPing() {
+  store.cloudMode = "☁️ 已连接后端 · 瓶子实时同步";
 }
 
 /* ============ 🛡 轻量级管理员系统（无后端登录，仅本地暗号） ============ */
@@ -1387,18 +1366,17 @@ function createBottle(input) {
   dbLoad().bottles.push(bottle);
   dbAddEnergy(ENERGY_RULES.throw);
 
-  /* ☁️ 云端同步：只有「立刻漂给陌生人」的普通瓶子才进海；
+  /* 🌐 后端同步：只有「立刻漂给陌生人」的普通瓶子才进海；
         时间胶囊（sealedUntil）要等开启后才该被捞到，故暂不上传。
-        注意：云端同步 content + drawing 两个字段（见 throwBottle 注释）；
-        drawing 列未建好时会自动降级为只写 content。 */
-  if (sb && input.target === "ocean" && !input.sealedUntil) {
-    shrinkDoodle(input.doodle)
-      .then(function (d) { return throwBottle(input.content, d); })
-      .then(function () { store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步"; })
+        默认在线模式：调用 /api/bottle（action=throw）写入 content + mood，
+        不再做离线回退判断。 */
+  if (input.target === "ocean" && !input.sealedUntil) {
+    throwBottle(input.content, input.mood)
+      .then(function () { store.cloudMode = "☁️ 已连接后端 · 瓶子实时同步"; })
       .catch(function (err) {
-        // ☁️ 云端同步失败的兜底处理：本地瓶子不受影响，页脚切回离线模式
-        console.error('Supabase 报错详情:', err);
-        store.cloudMode = "🐚 离线模式 · 仅本地存储";
+        // 后端写入失败：本地瓶子不受影响，仅记录错误并轻提示，不切离线状态
+        console.error("抛瓶请求失败:", err);
+        toast("warn", "网络不给力，瓶子先存在了本地");
       });
   }
   return bottle;
@@ -1609,7 +1587,7 @@ var store = reactive({
   unread: 0,
   adminVerify: false,             // 「管理员验证」弹窗
   adminOpen: false,               // 「灯塔值班室」管理面板
-  cloudMode: "☁️ 正在连接云端…"   // Supabase 连接状态，由 cloudPing() 更新
+  cloudMode: "☁️ 已连接后端 · 瓶子实时同步"   // 连接状态：默认在线模式
 });
 var _toastId = 1;
 function toast(type, msg) {
@@ -2248,28 +2226,22 @@ var CatchView = {
         if (!usedInitial && props.initialBottleId) {
           b = getBottle(props.initialBottleId) || null;          // 从通知点进来的指定瓶子
         } else {
-          /* 本地海区：先按深浅海分区，再按缘分模式加权挑选（跳过已释怀的瓶子） */
-          var pool = localPool(zone.value).filter(function (x) { return x.id !== excludeId && !isReleased(x); });
-          b = fatePick(pool, fateMode.value, myMoodColor.value);
-          /* 浅滩 + 随缘时，混入云端共享海的瓶子，让"共同的大海"一直在 */
-          if (zone.value === 0 && sb) {
-            try {
-              var cb = null;
-              /* 🕊️ 最多尝试 6 次，跳过已释怀的瓶子，避免「随风而去」的瓶子又漂回来 */
-              for (var attempt = 0; attempt < 6 && !cb; attempt++) {
-                var row = await getRandomBottle();
-                var cand = row ? cloudToLocal(row) : null;
-                if (!cand) break;                  // 空海，无需再试
-                if (!isReleased(cand)) cb = cand;  // 未释怀 → 采用
-              }
-              if (cb) {
-                if (!b) b = cb;
-                else if (fateMode.value === "random" && Math.random() < 0.5) b = cb;
-              }
-            } catch (e) {
-              console.error('Supabase 报错详情:', e);
-              store.cloudMode = "🐚 离线模式 · 仅本地存储";
+          /* 🌐 在线模式：优先从后端 /api/bottle（action=fetch）捞瓶，
+             默认在线，不做离线判断；最多尝试 6 次以跳过已释怀的瓶子 */
+          try {
+            for (var attempt = 0; attempt < 6; attempt++) {
+              var row = await getRandomBottle();
+              var cand = row ? cloudToLocal(row) : null;
+              if (!cand) break;                              // 空海，无需再试
+              if (!isReleased(cand)) { b = cand; break; }    // 未释怀 → 采用
             }
+          } catch (e) {
+            console.error("捞瓶请求失败:", e);   // 仅记录错误，默认在线不切离线提示
+          }
+          /* 后端暂无瓶子时回退本地海区，保证页面不空白 */
+          if (!b) {
+            var pool = localPool(zone.value).filter(function (x) { return x.id !== excludeId && !isReleased(x); });
+            b = fatePick(pool, fateMode.value, myMoodColor.value);
           }
         }
         usedInitial = true;
@@ -2929,7 +2901,7 @@ var App = {
     <CatchView v-else-if="store.view === \'catch\'" :key="store.catchKey" :initial-bottle-id="store.catchInitial" @open-toolbox="openToolbox" />\
     <SpaceView v-else-if="store.view === \'space\'" @open-bottle="openBottleById" />\
     <div style="max-width:720px;margin:0 auto 18px;padding:0 16px"><PrivacyNote /></div>\
-    <footer class="footer-note">心灵漂流瓶 · 匿名同伴互助演示版<br/>{{ store.cloudMode }}<br/>抛瓶写入云端 bottles 表 · 捞瓶从云端随机读取 · 断网自动回退本地<br/>若你或身边的人正处于危机中，请拨打 12355 或当地心理援助热线</footer>\
+    <footer class="footer-note">心灵漂流瓶 · 匿名同伴互助<br/>{{ store.cloudMode }}<br/>抛瓶与捞瓶经由后端 /api/bottle 实时同步<br/>若你或身边的人正处于危机中，请拨打 12355 或当地心理援助热线</footer>\
   </main>\
   <button class="fab" aria-label="打开急救工具箱：呼吸引导、白噪音与心理热线" @click="openToolbox()"><span class="ring anim-pulse-ring" aria-hidden="true"></span><span style="position:relative" v-html="ic(\'wind\', \'ic-xl\')"></span></button>\
   <nav class="bottomnav" aria-label="主导航">\
