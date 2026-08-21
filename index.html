@@ -1,31 +1,1715 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#dcedff" />
-    <meta
-      name="description"
-      content="心灵漂流瓶 —— 面向学生的匿名情绪分享与同伴互助平台。把心事放进瓶子，让温暖漂到你身边。"
-    />
-    <title>心灵漂流瓶 · 把心事放进瓶子，让温暖漂到你身边</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        background-color: #e3e9f8;
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#d9ecff" />
+<meta name="description" content="心灵漂流瓶 —— 面向学生的匿名情绪分享与同伴互助平台。把心事放进瓶子，让温暖漂到你身边。" />
+<title>心灵漂流瓶 · 把心事放进瓶子，让温暖漂到你身边</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=ZCOOL+XiaoWei&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet" />
+<style>
+/* ================= 主题变量 ================= */
+:root{
+  --font-display:"ZCOOL KuaiLe","Noto Sans SC",cursive;
+  --font-letter:"ZCOOL XiaoWei","Noto Sans SC",serif;
+  --font-body:"Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+  --ink:#31405f;--ink-deep:#22304e;--ink-soft:#71809f;--ink-faint:#9aa7c2;
+  --sea-50:#f2f8ff;--sea-100:#e4f0fc;--sea-200:#cde3f8;--sea-300:#aed0f0;--sea-400:#8cb8e6;--sea-500:#6b9bd8;--sea-600:#4f7fc0;--sea-700:#3d659e;
+  --dusk-100:#efeaf9;--dusk-200:#e0d8f3;--dusk-300:#c9bce8;--dusk-400:#a996d6;--dusk-500:#8a74bf;
+  --cream:#fdfaf3;--cream-deep:#f7f0e2;--line:#eadfca;
+  --gold-100:#fdf3dd;--gold-300:#f6d491;--gold-400:#eebb62;--gold-500:#e0a63f;
+  --coral-100:#fdeee8;--coral-300:#f7c3ab;--coral-400:#f09f7d;--coral-500:#e57f58;
+  --blush-100:#fceef2;--blush-300:#f4c2d0;--blush-400:#ea9cb2;--blush-500:#dc7693;
+  --mint-100:#e9f5ef;--mint-300:#b7dcc8;--mint-500:#5f9e82;
+  --rose-100:#fdeef0;--rose-400:#ec8798;--rose-500:#dd6579;
+}
+.theme-dawn{--sky1:#d9ecff;--sky2:#e2e8fb;--sky3:#efe8f6;--sea-a:#a9c9ec;--sea-b:#6f97cf;--glow:rgba(255,214,140,.85);--star-op:.35}
+.theme-dusk{--sky1:#f2dfee;--sky2:#e2daf4;--sky3:#d6d2f0;--sea-a:#b0a6de;--sea-b:#7d78c0;--glow:rgba(255,190,170,.9);--star-op:.55}
+.theme-night{--sky1:#26345c;--sky2:#1c2747;--sky3:#16203a;--sea-a:#33517f;--sea-b:#1e3460;--glow:rgba(230,235,255,.85);--star-op:1}
+
+/* ================= 基础 ================= */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);color:var(--ink);background:#e3e9f8;-webkit-font-smoothing:antialiased;line-height:1.5}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
+textarea,input{font-family:inherit}
+img,svg{display:block}
+::selection{background:var(--sea-300);color:var(--ink-deep)}
+:focus-visible{outline:2px solid var(--sea-500);outline-offset:2px;border-radius:6px}
+::-webkit-scrollbar{width:10px}::-webkit-scrollbar-track{background:#e7edf8}::-webkit-scrollbar-thumb{background:#b6c9e6;border-radius:8px;border:2px solid #e7edf8}
+
+.font-display{font-family:var(--font-display)}
+.font-letter{font-family:var(--font-letter)}
+
+/* ================= 动效 ================= */
+@keyframes waveSlide{to{transform:translateX(-50%)}}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-13px) rotate(3deg)}}
+@keyframes miniBob{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-7px) rotate(5deg)}}
+@keyframes twinkle{0%,100%{opacity:.12;transform:scale(.7)}50%{opacity:.95;transform:scale(1.2)}}
+@keyframes cloudDrift{from{transform:translateX(-22vw)}to{transform:translateX(118vw)}}
+@keyframes gullDrift{from{transform:translateX(-12vw) translateY(0)}50%{transform:translateX(48vw) translateY(-18px)}to{transform:translateX(112vw) translateY(4px)}}
+@keyframes sunPulse{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.08);opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes modalIn{from{opacity:0;transform:translateY(30px) scale(.95)}to{opacity:1;transform:none}}
+@keyframes backdropIn{from{opacity:0}to{opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+@keyframes popIn{0%{transform:scale(.4);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+@keyframes riseUp{0%{transform:translateY(70px) rotate(-8deg);opacity:0}60%{opacity:1}100%{transform:translateY(0) rotate(-2deg);opacity:1}}
+@keyframes heartFloat{0%{transform:translateY(0) scale(.55);opacity:0}15%{opacity:1}100%{transform:translateY(-120px) scale(1.3);opacity:0}}
+@keyframes pulseRing{0%{transform:scale(.9);opacity:.7}100%{transform:scale(1.7);opacity:0}}
+@keyframes spinSoft{to{transform:rotate(360deg)}}
+@keyframes shimmerSweep{from{background-position:-200% 0}to{background-position:200% 0}}
+@keyframes bubbleUp{0%{transform:translateY(0) scale(.55);opacity:0}25%{opacity:.75}100%{transform:translateY(-90px) scale(1.1);opacity:0}}
+.anim-wave{animation:waveSlide linear infinite}
+.anim-bob{animation:bob 4.8s ease-in-out infinite}
+.anim-mini-bob{animation:miniBob 3.8s ease-in-out infinite}
+.anim-twinkle{animation:twinkle ease-in-out infinite}
+.anim-cloud{animation:cloudDrift linear infinite}
+.anim-gull{animation:gullDrift linear infinite}
+.anim-sun{animation:sunPulse 5s ease-in-out infinite}
+.anim-fade-up{animation:fadeUp .6s ease-out both}
+.anim-modal-in{animation:modalIn .42s cubic-bezier(.2,.9,.3,1.15) both}
+.anim-backdrop-in{animation:backdropIn .28s ease-out both}
+.anim-shake{animation:shake .45s ease-in-out}
+.anim-pop{animation:popIn .5s cubic-bezier(.2,.9,.3,1.3) both}
+.anim-rise{animation:riseUp .9s cubic-bezier(.2,.8,.3,1.08) both}
+.heart-float{animation:heartFloat 1.5s ease-out forwards}
+.anim-pulse-ring{animation:pulseRing 2.2s ease-out infinite}
+.anim-spin-soft{animation:spinSoft 1.1s linear infinite}
+.anim-bubble{animation:bubbleUp 4.4s ease-in infinite}
+.shimmer{background:linear-gradient(100deg,#f0e9d8 40%,#fdf9ee 50%,#f0e9d8 60%);background-size:200% 100%;animation:shimmerSweep 1.4s linear infinite}
+.card-soft{box-shadow:0 2px 6px rgba(49,64,95,.05),0 14px 34px rgba(49,64,95,.1)}
+
+/* ================= 图标 ================= */
+.ic{display:inline-block;vertical-align:-.15em;width:1.1em;height:1.1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ic.filled{fill:currentColor;stroke:none}
+.ic-s{width:13px;height:13px}.ic-m{width:17px;height:17px}.ic-l{width:21px;height:21px}.ic-xl{width:26px;height:26px}
+
+/* ================= 布局 / 导航 ================= */
+#app{min-height:100vh}
+.main{padding-bottom:120px}
+.wrap{max-width:560px;margin:0 auto;padding:24px 16px}
+.wrap-wide{max-width:720px;margin:0 auto;padding:24px 16px}
+.footer-note{max-width:640px;margin:0 auto;padding:32px 16px 0;text-align:center;font-size:11px;line-height:1.7;color:var(--ink-faint)}
+.bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:80;border-top:1px solid #ded6c2;background:rgba(253,250,243,.95);backdrop-filter:blur(8px);padding-bottom:env(safe-area-inset-bottom)}
+.bottomnav .inner{max-width:480px;margin:0 auto;display:flex}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 0 8px;font-size:11px;font-weight:500;color:var(--ink-faint);transition:color .2s,transform .1s;position:relative}
+.nav-btn:active{transform:scale(.95)}
+.nav-btn.active{color:var(--sea-600)}
+.nav-btn .icwrap{border-radius:999px;padding:4px 12px;transition:background .2s}
+.nav-btn.active .icwrap{background:var(--sea-100)}
+.nav-badge{position:absolute;right:22%;top:6px;min-width:16px;height:16px;border-radius:999px;background:var(--blush-400);color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 4px}
+
+/* ================= 海洋场景 ================= */
+.ocean{position:relative;overflow:hidden}
+.stars{position:absolute;inset:0;opacity:var(--star-op)}
+.star{position:absolute;border-radius:50%;background:#fff;box-shadow:0 0 6px 1px rgba(255,255,255,.7)}
+.sun{position:absolute;right:12%;top:12%;width:64px;height:64px;border-radius:50%}
+@media(min-width:768px){.sun{width:80px;height:80px}}
+.sun .crater{position:absolute;left:12px;top:16px;width:12px;height:12px;border-radius:50%;background:#aab8e0;opacity:.7}
+.cloud{position:absolute;border-radius:999px;background:rgba(255,255,255,.7);filter:blur(6px)}
+.gull{position:absolute;top:24%;width:40px;height:14px;color:var(--ink-soft)}
+.bubble{position:absolute;width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.2)}
+.wave{position:absolute;left:0;right:0;bottom:0}
+.wave .track{display:flex;height:100%;width:200%}
+.wave .track>span{height:100%;width:50%;flex:none}
+.wave svg{height:100%;width:100%;flex:none}
+.foam{position:absolute;left:0;right:0;bottom:0;height:8px;background:rgba(255,255,255,.15)}
+.float-bottle{position:absolute;z-index:10;width:38px;cursor:pointer;transition:transform .2s;background:none}
+.float-bottle:hover{transform:scale(1.1)}
+@media(min-width:768px){.float-bottle{width:44px}}
+.ocean-overlay{position:absolute;inset:0;z-index:20}
+
+/* 首页覆盖层内容 */
+.home-inner{height:100%;display:flex;flex-direction:column;justify-content:space-between;padding:20px}
+@media(min-width:768px){.home-inner{padding:32px}}
+.home-top{max-width:85%}
+.home-eyebrow{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;letter-spacing:.02em}
+.home-title{font-family:var(--font-display);margin-top:8px;font-size:40px;line-height:1.15}
+@media(min-width:768px){.home-title{font-size:52px}}
+.home-slogan{font-family:var(--font-letter);margin-top:8px;font-size:16px}
+@media(min-width:768px){.home-slogan{font-size:18px}}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+.legend span{border-radius:999px;padding:6px 14px;font-size:12px;font-weight:500;backdrop-filter:blur(4px)}
+.cta-row{display:flex;flex-direction:column;gap:12px}
+@media(min-width:640px){.cta-row{flex-direction:row;align-items:flex-end;gap:16px}}
+.cta{display:flex;align-items:center;justify-content:center;gap:10px;border-radius:999px;padding:16px 32px;font-size:18px;font-weight:500;color:#fff;transition:transform .2s,box-shadow .2s,background .2s}
+.cta:hover{transform:translateY(-3px)}
+.cta:active{transform:scale(.96)}
+.cta-throw{background:var(--coral-400);box-shadow:0 14px 32px rgba(229,127,88,.5)}
+.cta-throw:hover{background:var(--coral-500);box-shadow:0 18px 40px rgba(229,127,88,.6)}
+.cta-catch{background:var(--sea-600);box-shadow:0 14px 32px rgba(61,101,158,.5)}
+.cta-catch:hover{background:var(--sea-700);box-shadow:0 18px 40px rgba(61,101,158,.6)}
+.cta .count{border-radius:999px;background:rgba(255,255,255,.25);padding:2px 8px;font-size:12px}
+
+/* 首页海面之下卡片 */
+.below{max-width:720px;margin:-20px auto 0;padding:0 16px 24px;display:flex;flex-direction:column;gap:16px}
+.panel{border-radius:22px;padding:20px}
+.panel-head{display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-family:var(--font-display);font-size:16px;color:var(--ink-deep)}
+.panel-sub{font-size:11px;color:var(--ink-faint)}
+.panel p.body{margin-top:8px;font-size:13px;line-height:1.7;color:var(--ink)}
+.quote-panel{position:relative;overflow:hidden;background:var(--dusk-100)}
+.quote-mark{position:absolute;right:-24px;top:-32px;font-size:110px;line-height:1;color:rgba(201,188,232,.5);user-select:none;font-family:Georgia,serif}
+.quote-text{font-family:var(--font-letter);font-size:18px;line-height:1.7;color:var(--ink-deep)}
+.quote-by{margin-top:8px;font-size:11px;color:var(--ink-soft)}
+.energy-card{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;background:var(--cream);transition:transform .2s}
+.energy-card:hover{transform:translateY(-2px)}
+.energy-left{display:flex;align-items:center;gap:12px}
+.energy-ico{width:40px;height:40px;border-radius:50%;background:var(--gold-100);color:var(--gold-500);display:flex;align-items:center;justify-content:center}
+.energy-name{font-size:14px;font-weight:500;color:var(--ink-deep)}
+.energy-sub{margin-top:2px;font-size:11px;color:var(--ink-soft)}
+
+/* ================= 通用小组件 ================= */
+.btn{border-radius:999px;padding:10px 22px;font-size:14px;font-weight:500;transition:background .2s,transform .1s,box-shadow .2s;display:inline-flex;align-items:center;gap:8px}
+.btn:active{transform:scale(.96)}
+.btn-sea{background:var(--sea-600);color:#fff;box-shadow:0 6px 18px rgba(61,101,158,.35)}
+.btn-sea:hover{background:var(--sea-700)}
+.btn-coral{background:var(--coral-400);color:#fff;box-shadow:0 6px 18px rgba(229,127,88,.4)}
+.btn-coral:hover{background:var(--coral-500)}
+.btn-ghost{border:1px solid var(--sea-300);background:#fff;color:var(--sea-600)}
+.btn-ghost:hover{background:var(--sea-50)}
+.btn-ai{background:linear-gradient(90deg,var(--dusk-400),var(--blush-400));color:#fff;box-shadow:0 4px 14px rgba(169,150,214,.4);padding:7px 14px;font-size:12px}
+.btn-ai:hover{filter:brightness(1.1)}
+.btn[disabled]{opacity:.7;cursor:not-allowed}
+.link-quiet{font-size:13px;color:var(--ink-soft);text-decoration:none}
+.link-quiet:hover{text-decoration:underline}
+
+.card{background:var(--cream);border-radius:26px;padding:20px}
+.field-label{display:block;font-size:12px;font-weight:500;color:var(--ink-soft);margin-bottom:8px}
+.textarea{width:100%;resize:none;border-radius:16px;border:2px solid var(--line);background:rgba(255,255,255,.8);padding:12px 16px;font-size:15px;line-height:1.7;color:var(--ink);outline:none;transition:border-color .2s,background .2s}
+.textarea:focus{border-color:var(--sea-400);background:#fff}
+.textarea::placeholder{color:#b8ad92}
+.char-count{text-align:right;font-size:11px;color:var(--ink-faint);margin-top:4px}
+.section-label{font-size:12px;font-weight:500;color:var(--ink-soft);margin-bottom:8px}
+
+/* 情绪标签 chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:8px 14px;font-size:12px;transition:transform .1s,opacity .2s,box-shadow .2s}
+.chip:active{transform:scale(.95)}
+.chip .dot{width:6px;height:6px;border-radius:50%}
+.chip.sel{box-shadow:0 0 0 2px var(--sea-400);opacity:1!important}
+.chip-study{background:#eaf1fc;color:#46688f}
+.chip-exam{background:#e5ecf8;color:#3d5e9e}
+.chip-social{background:#efeafb;color:#665a9e}
+.chip-family{background:#f9ecf2;color:#9a5f7c}
+.chip-self{background:#e6f3ef;color:#3f7d6e}
+.chip-other{background:#f0f2f5;color:#5c6a85}
+/* 回复风格 chips */
+.style-gentle{background:var(--blush-100);color:var(--blush-500)}
+.style-encourage{background:var(--gold-100);color:var(--gold-500)}
+.style-practical{background:var(--mint-100);color:var(--mint-500)}
+.meta-chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:11px}
+.meta-chip .dot{width:6px;height:6px;border-radius:50%}
+
+/* 开关 */
+.switch{position:relative;width:44px;height:24px;border-radius:999px;background:#d9d2c0;transition:background .2s;flex:none}
+.switch.on{background:var(--sea-500)}
+.switch .knob{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:left .2s}
+.switch.on .knob{left:22px}
+.switch-row{display:flex;align-items:center;justify-content:space-between;border-radius:16px;background:var(--sea-50);padding:12px 16px}
+.switch-row .t{font-size:13px;font-weight:500;color:var(--ink-deep)}
+.switch-row .d{margin-top:2px;font-size:11px;color:var(--ink-soft)}
+
+/* 语气温度计 */
+.meter{display:flex;align-items:center;gap:12px;margin-top:6px}
+.meter .lbl{font-size:11px;color:var(--ink-soft);flex:none}
+.meter .bar{height:8px;flex:1;border-radius:999px;background:var(--cream-deep);overflow:hidden}
+.meter .fill{height:100%;border-radius:999px;transition:width .5s,background .5s}
+.meter .val{width:150px;flex:none;text-align:right;font-size:11px;font-weight:500}
+
+/* 空状态 */
+.empty{display:flex;flex-direction:column;align-items:center;text-align:center;border:1px dashed #d6cbb2;border-radius:22px;background:rgba(253,250,243,.7);padding:40px 24px}
+.empty .ico{width:56px;height:56px;border-radius:50%;background:var(--sea-100);color:var(--sea-500);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
+.empty .t{font-family:var(--font-display);font-size:16px;color:var(--ink-deep)}
+.empty .d{margin-top:6px;max-width:280px;font-size:13px;line-height:1.7;color:var(--ink-soft)}
+.empty .act{margin-top:16px}
+
+/* ================= 弹层 ================= */
+.overlay{position:fixed;inset:0;z-index:90;display:flex;align-items:flex-end;justify-content:center;padding:12px}
+@media(min-width:640px){.overlay{align-items:center;padding:24px}}
+.overlay .bg{position:absolute;inset:0;background:rgba(28,42,74,.55);backdrop-filter:blur(3px);cursor:default;border:none}
+.dialog{position:relative;width:100%;max-width:512px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;background:var(--cream);border-radius:28px 28px 0 0;box-shadow:0 24px 70px rgba(28,42,74,.4)}
+.dialog.wide{max-width:672px}
+@media(min-width:640px){.dialog{border-radius:28px}}
+.dialog-head{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:16px 20px}
+.dialog-head h3{font-family:var(--font-display);font-size:18px;color:var(--ink-deep)}
+.dialog-head .sub{margin-top:2px;font-size:12px;color:var(--ink-soft)}
+.icon-btn{border-radius:50%;background:var(--cream-deep);padding:8px;color:var(--ink-soft);transition:transform .2s,background .2s}
+.icon-btn:hover{transform:rotate(90deg);background:var(--line)}
+.dialog-body{overflow-y:auto;padding:20px}
+
+/* 守门员 */
+.care-overlay{position:fixed;inset:0;z-index:95;display:flex;align-items:center;justify-content:center;padding:20px}
+.care-box{position:relative;width:100%;max-width:440px;border-radius:28px;border:1px solid;padding:24px;box-shadow:0 20px 60px rgba(15,25,50,.4)}
+.care-hard{border-color:rgba(236,135,152,.4);background:#fff5f5}
+.care-implicit{border-color:rgba(246,212,145,.6);background:#fff9ef}
+.care-head{display:flex;align-items:flex-start;gap:12px}
+.care-ico{width:44px;height:44px;flex:none;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 4px 12px rgba(0,0,0,.15)}
+.care-hard .care-ico{background:var(--rose-400)}
+.care-implicit .care-ico{background:var(--gold-400)}
+.care-title{font-family:var(--font-display);font-size:16px;color:var(--ink-deep)}
+.care-body{margin-top:6px;font-size:13px;line-height:1.7;color:var(--ink)}
+.care-tags{margin-top:16px;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.care-tags .lbl{font-size:11px;color:var(--ink-soft)}
+.care-tag{border-radius:999px;padding:2px 8px;font-size:11px}
+.care-hard .care-tag{background:var(--rose-100);color:var(--rose-500)}
+.care-implicit .care-tag{background:var(--gold-100);color:var(--gold-500)}
+.care-rewrite{margin-top:16px;border-radius:16px;border:1px solid rgba(246,212,145,.5);background:rgba(255,255,255,.8);padding:16px}
+.care-rewrite .lbl{font-size:11px;font-weight:500;color:var(--gold-500)}
+.care-rewrite p{margin-top:6px;font-size:13px;line-height:1.7;color:var(--ink)}
+
+/* Toast */
+.toasts{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
+.toast{border-radius:999px;padding:10px 20px;font-size:14px;font-weight:500;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.toast-ok{background:var(--sea-600)}
+.toast-warn{background:var(--gold-500)}
+.toast-err{background:var(--coral-500)}
+
+/* ================= 抛瓶 ================= */
+.danger-note{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border-radius:16px;border:1px solid var(--coral-300);background:var(--coral-100);padding:12px 16px;margin-top:10px}
+.danger-note p{font-size:13px;line-height:1.6;color:#9c5230}
+.capsule-box{margin-top:12px;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.7);padding:12px 16px}
+.capsule-top{display:flex;align-items:center;justify-content:space-between}
+.capsule-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--ink-deep)}
+.capsule-title .ic{color:var(--dusk-400)}
+.pill{border-radius:999px;padding:7px 14px;font-size:12px;transition:transform .1s,background .2s,color .2s}
+.pill:active{transform:scale(.95)}
+.pill-dusk{background:var(--dusk-100);color:var(--dusk-500)}
+.pill-dusk.sel{background:var(--dusk-400);color:#fff;box-shadow:0 4px 12px rgba(169,150,214,.4)}
+.pill-sea{background:var(--sea-50);color:var(--sea-600)}
+.pill-sea.sel{background:var(--sea-600);color:#fff;box-shadow:0 4px 12px rgba(61,101,158,.4)}
+.date-input{border-radius:12px;border:2px solid var(--line);background:#fff;padding:8px 12px;font-size:14px;color:var(--ink);outline:none}
+.date-input:focus{border-color:var(--dusk-300)}
+.submit-big{margin-top:20px;width:100%;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;background:linear-gradient(90deg,var(--sea-500),var(--dusk-400));padding:14px 24px;font-size:15px;font-weight:500;color:#fff;box-shadow:0 12px 28px rgba(107,155,216,.45);transition:box-shadow .2s,transform .1s}
+.submit-big:hover{box-shadow:0 14px 34px rgba(107,155,216,.6)}
+.submit-big:active{transform:scale(.98)}
+.submit-big[disabled]{opacity:.7}
+.form-hint{margin-top:12px;text-align:center;font-size:11px;color:var(--ink-faint)}
+
+/* 成功页 */
+.done-wrap{max-width:560px;margin:0 auto;padding:40px 16px;text-align:center}
+.done-bottle{width:96px;margin:0 auto}
+.done-title{font-family:var(--font-display);margin-top:24px;font-size:24px;color:var(--ink-deep)}
+.done-msg{margin:12px auto 0;max-width:340px;font-size:14px;line-height:1.7;color:var(--ink)}
+.done-energy{margin-top:12px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;background:var(--gold-100);padding:6px 16px;font-size:12px;font-weight:500;color:var(--gold-500)}
+.done-actions{margin-top:32px;display:flex;flex-direction:column;align-items:center;gap:12px}
+@media(min-width:640px){.done-actions{flex-direction:row;justify-content:center}}
+
+/* ================= 捞瓶 ================= */
+.catch-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.catch-title{font-family:var(--font-display);font-size:24px;color:var(--ink-deep)}
+.catch-sub{margin-top:4px;font-size:13px;color:var(--ink-soft)}
+.letter-card{position:relative;overflow:hidden;border-radius:26px;background:var(--cream)}
+.letter-top{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:rgba(242,248,255,.7);padding:12px 20px}
+.letter-author{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:500;color:var(--ink-soft)}
+.letter-body{padding:20px}
+.letter-content{font-family:var(--font-letter);white-space:pre-wrap;font-size:17px;line-height:1.8;color:var(--ink)}
+.hug-btn{margin-top:16px;display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid var(--line);background:#fff;padding:8px 16px;font-size:12px;font-weight:500;color:var(--ink-soft);transition:transform .1s,border-color .2s,color .2s}
+.hug-btn:hover{border-color:var(--blush-300);color:var(--blush-500)}
+.hug-btn:active{transform:scale(.95)}
+.hug-btn.on{border-color:var(--blush-400);background:var(--blush-100);color:var(--blush-500)}
+.reply-box{margin-top:16px;border-radius:26px;background:var(--cream);padding:20px}
+.reply-head{display:flex;align-items:center;justify-content:space-between}
+.reply-head .lbl{font-size:12px;font-weight:500;color:var(--ink-soft)}
+.ai-cards{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.ai-card{width:100%;text-align:left;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.8);padding:14px;transition:box-shadow .2s,transform .1s,border-color .2s}
+.ai-card:hover{box-shadow:0 6px 18px rgba(49,64,95,.12)}
+.ai-card:active{transform:scale(.99)}
+.ai-card.sel{border-color:var(--sea-400);background:var(--sea-50)}
+.ai-card .txt{margin-top:6px;display:block;font-size:13px;line-height:1.7;color:var(--ink)}
+.ai-hint{font-size:10px;color:var(--ink-faint);margin-top:6px}
+.reply-actions{margin-top:12px;display:flex;align-items:center;justify-content:space-between}
+.reply-actions .hint{font-size:10px;color:var(--ink-faint)}
+.replies-head{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-soft);margin:20px 0 8px}
+.reply-item{position:relative;border-radius:20px;background:var(--cream);padding:16px;margin-bottom:10px}
+.reply-item.warm{border:1px solid var(--gold-300)}
+.warm-badge{position:absolute;top:-10px;left:16px;display:flex;align-items:center;gap:4px;border-radius:999px;background:var(--gold-400);padding:2px 10px;font-size:10px;font-weight:500;color:#fff;box-shadow:0 4px 10px rgba(224,166,63,.4)}
+.reply-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.reply-meta .who{font-size:11px;color:var(--ink-faint)}
+.reply-meta .top{font-size:10px;color:var(--gold-500)}
+.reply-content{margin-top:8px;white-space:pre-wrap;font-size:14px;line-height:1.7;color:var(--ink)}
+.reply-foot{margin-top:12px;display:flex;align-items:center;justify-content:flex-end;gap:8px}
+.report-btn{display:flex;align-items:center;gap:4px;border-radius:999px;padding:6px 10px;font-size:11px;color:var(--ink-faint);transition:background .2s,color .2s}
+.report-btn:hover{background:var(--rose-100);color:var(--rose-500)}
+.report-btn[disabled]{opacity:.5;cursor:default}
+.like-btn{position:relative;display:flex;align-items:center;gap:6px;border-radius:999px;border:1px solid var(--line);background:#fff;padding:6px 12px;font-size:12px;color:var(--ink-soft);transition:transform .1s,border-color .2s,color .2s}
+.like-btn:hover{border-color:var(--blush-300);color:var(--blush-500)}
+.like-btn:active{transform:scale(.9)}
+.like-btn.on{border-color:var(--blush-400);background:var(--blush-100);color:var(--blush-500)}
+.hearts{position:absolute;bottom:100%;left:50%;pointer-events:none}
+.folded{padding:4px 0;font-size:12px;color:var(--ink-faint)}
+/* 打捞中 */
+.fetching{max-width:560px;margin:0 auto;padding:64px 16px;text-align:center}
+.fetching .sea-window{position:relative;margin:0 auto;height:224px;width:160px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;border-radius:26px;background:linear-gradient(180deg,var(--sea-300),var(--sea-500) 55%,var(--sea-700))}
+.fetching .bottle{width:80px;margin-bottom:12px}
+.fetching .shade{position:absolute;left:0;right:0;bottom:0;height:56px;background:linear-gradient(180deg,transparent,rgba(14,42,92,.6));pointer-events:none}
+.fetching .t{font-family:var(--font-display);margin-top:24px;font-size:18px;color:var(--ink-deep)}
+.fetching .s{margin-top:6px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--ink-soft)}
+
+/* ================= 我的空间 ================= */
+.id-card{position:relative;overflow:hidden;border-radius:26px;background:var(--cream);padding:20px}
+.id-card .blob{position:absolute;right:-32px;top:-40px;width:128px;height:128px;border-radius:50%;background:var(--sea-100)}
+.id-inner{position:relative;display:flex;align-items:center;gap:16px}
+.avatar{width:64px;height:64px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:500;color:#fff;box-shadow:0 6px 16px rgba(49,64,95,.25)}
+.frame-sea{box-shadow:0 0 0 4px var(--sea-400),0 6px 16px rgba(49,64,95,.25)}
+.frame-gold{box-shadow:0 0 0 4px var(--gold-400),0 6px 16px rgba(49,64,95,.25)}
+.id-name{display:flex;align-items:center;gap:8px}
+.id-name h1{font-family:var(--font-display);font-size:20px;color:var(--ink-deep);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.reroll{border-radius:50%;background:var(--cream-deep);padding:6px;color:var(--ink-soft);transition:color .2s,transform .1s}
+.reroll:hover{color:var(--sea-600)}
+.reroll:active{transform:scale(.9)}
+.id-sub{margin-top:2px;font-size:12px;color:var(--ink-soft)}
+.id-tags{margin-top:8px;display:flex;align-items:center;gap:8px}
+.tag-energy{display:flex;align-items:center;gap:4px;border-radius:999px;background:var(--gold-100);padding:4px 10px;font-size:11px;font-weight:500;color:var(--gold-500)}
+.tag-week{display:flex;align-items:center;gap:4px;border-radius:999px;background:var(--dusk-100);padding:4px 10px;font-size:11px;font-weight:500;color:var(--dusk-500);transition:background .2s,transform .1s}
+.tag-week:hover{background:var(--dusk-200)}
+.tag-week:active{transform:scale(.95)}
+.notice-card{margin-top:16px;border-radius:22px;border:1px solid var(--blush-300);background:rgba(252,238,242,.7);padding:16px}
+.notice-head{display:flex;align-items:center;justify-content:space-between}
+.notice-title{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--blush-500)}
+.notice-dot{position:relative;width:10px;height:10px}
+.notice-dot .p{position:absolute;inset:0;border-radius:50%;background:var(--blush-400)}
+.notice-item{display:flex;width:100%;align-items:center;justify-content:space-between;border-radius:12px;background:rgba(255,255,255,.8);padding:8px 12px;text-align:left;font-size:12px;color:var(--ink);transition:background .2s;margin-top:6px}
+.notice-item:hover{background:#fff}
+.notice-item .t{font-size:10px;color:var(--ink-faint)}
+.tabs{margin-top:20px;display:flex;gap:8px}
+.tab{border-radius:999px;padding:8px 16px;font-size:13px;font-weight:500;transition:transform .1s,background .2s}
+.tab:active{transform:scale(.95)}
+.tab.on{background:var(--ink-deep);color:#fff;box-shadow:0 4px 12px rgba(34,48,78,.3)}
+.tab.off{background:rgba(255,255,255,.7);color:var(--ink-soft)}
+.tab.off:hover{background:#fff}
+.tab-content{margin-top:16px}
+.item-card{border-radius:20px;background:var(--cream);padding:16px;margin-bottom:10px}
+.item-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.item-meta .time{margin-left:auto;font-size:10px;color:var(--ink-faint)}
+.item-content{font-family:var(--font-letter);margin-top:10px;font-size:15px;line-height:1.7;color:var(--ink);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.item-stats{margin-top:8px;font-size:11px;color:var(--ink-soft)}
+.badge-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(min-width:640px){.badge-grid{grid-template-columns:repeat(3,1fr)}}
+.badge-card{position:relative;border-radius:20px;padding:16px;text-align:center}
+.badge-card.got{background:var(--cream)}
+.badge-card.lock{background:rgba(238,234,224,.8)}
+.badge-ico{margin:0 auto;width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.badge-card.got .badge-ico{background:linear-gradient(135deg,var(--gold-300),var(--coral-400));color:#fff;box-shadow:0 6px 16px rgba(224,166,63,.4)}
+.badge-card.lock .badge-ico{background:#ddd7c8;color:#a8a192}
+.badge-name{font-family:var(--font-display);margin-top:8px;font-size:13px}
+.badge-card.got .badge-name{color:var(--ink-deep)}
+.badge-card.lock .badge-name{color:var(--ink-faint)}
+.badge-desc{margin-top:2px;font-size:10px;line-height:1.5;color:var(--ink-soft)}
+.badge-medal{position:absolute;right:8px;top:8px;font-size:10px}
+.shop-desc{font-size:11px;color:var(--ink-soft);margin-bottom:10px}
+.shop-item{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:20px;background:var(--cream);padding:12px 16px;margin-bottom:8px}
+.shop-name{font-size:13px;font-weight:500;color:var(--ink-deep)}
+.shop-type{margin-left:8px;border-radius:999px;background:var(--sea-50);padding:2px 6px;font-size:10px;color:var(--sea-600)}
+.shop-desc2{margin-top:2px;font-size:11px;color:var(--ink-soft)}
+.shop-buy{display:flex;align-items:center;gap:4px;border-radius:999px;border:1px solid var(--gold-300);background:var(--gold-100);padding:6px 14px;font-size:12px;font-weight:500;color:var(--gold-500);transition:background .2s,transform .1s;flex:none}
+.shop-buy:hover{background:rgba(246,212,145,.4)}
+.shop-buy:active{transform:scale(.95)}
+.shop-equip{border-radius:999px;background:var(--sea-600);padding:6px 16px;font-size:12px;font-weight:500;color:#fff;transition:background .2s,transform .1s;flex:none}
+.shop-equip:hover{background:var(--sea-700)}
+.shop-equip:active{transform:scale(.95)}
+.shop-using{border-radius:999px;background:var(--mint-100);padding:6px 12px;font-size:12px;font-weight:500;color:var(--mint-500);flex:none}
+
+/* ================= 周报 ================= */
+.week-poster{position:relative;overflow:hidden;border-radius:24px;background:linear-gradient(135deg,var(--sea-600),var(--sea-500) 50%,var(--dusk-400));padding:24px;color:#fff}
+.week-emoji{position:absolute;right:16px;top:16px;font-size:36px;opacity:.3}
+.week-pre{font-family:var(--font-letter);font-size:14px;opacity:.9}
+.week-grid{margin-top:16px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:640px){.week-grid{grid-template-columns:repeat(4,1fr)}}
+.week-stat{border-radius:16px;background:rgba(255,255,255,.15);padding:12px;text-align:center;backdrop-filter:blur(4px)}
+.week-stat .n{font-family:var(--font-display);font-size:24px;line-height:1}
+.week-stat .l{margin-top:6px;font-size:10px;opacity:.85}
+.week-moods{margin-top:20px}
+.week-moods .t{font-size:11px;opacity:.85}
+.mood-bar{margin-top:6px;display:flex;align-items:center;gap:8px}
+.mood-bar .name{width:56px;flex:none;font-size:11px}
+.mood-bar .track{height:10px;flex:1;border-radius:999px;background:rgba(255,255,255,.2);overflow:hidden}
+.mood-bar .fill{display:block;height:100%;border-radius:999px;background:var(--gold-300)}
+.mood-bar .num{width:20px;text-align:right;font-size:11px}
+.week-quote{margin-top:20px;border-radius:16px;background:rgba(255,255,255,.95);padding:16px;color:var(--ink)}
+.week-quote .lbl{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:var(--dusk-500)}
+.week-quote p{font-family:var(--font-letter);margin-top:6px;font-size:15px;line-height:1.7}
+.week-foot{margin-top:16px;text-align:center;font-size:10px;opacity:.75}
+.loading-col{display:flex;flex-direction:column;align-items:center;gap:12px;padding:64px 24px}
+.loading-col p{font-size:13px;color:var(--ink-soft)}
+
+/* ================= 急救工具箱 ================= */
+.fab{position:fixed;right:16px;bottom:88px;z-index:70;width:56px;height:56px;border-radius:50%;background:var(--coral-400);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 26px rgba(229,127,88,.5);transition:transform .2s,background .2s}
+.fab:hover{transform:scale(1.05);background:var(--coral-500)}
+.fab:active{transform:scale(.95)}
+.fab .ring{position:absolute;inset:0;border-radius:50%;background:var(--coral-300)}
+.breath-box{border-radius:22px;background:var(--sea-50);padding:20px;text-align:center}
+.breath-title{font-family:var(--font-display);font-size:14px;color:var(--ink-deep)}
+.breath-stage{position:relative;margin:16px auto 0;width:144px;height:144px;display:flex;align-items:center;justify-content:center}
+.breath-halo{position:absolute;inset:0;border-radius:50%;background:rgba(205,227,248,.6)}
+.breath-ball{position:absolute;inset:12px;border-radius:50%;background:linear-gradient(135deg,var(--sea-300),var(--sea-500));box-shadow:0 8px 26px rgba(79,127,192,.45)}
+.breath-label{position:relative;z-index:1;text-align:center;color:#fff}
+.breath-label .ph{display:block;font-family:var(--font-display);font-size:18px;line-height:1}
+.breath-label .num{display:block;margin-top:4px;font-size:24px;font-weight:300}
+.breath-sub{margin-top:8px;font-size:11px;color:var(--ink-soft)}
+.breath-actions{margin-top:12px;display:flex;justify-content:center;gap:8px}
+.noise-row{display:flex;gap:10px}
+.noise-btn{flex:1;display:flex;flex-direction:column;align-items:flex-start;border-radius:16px;border:1px solid var(--line);background:rgba(255,255,255,.8);padding:12px 16px;text-align:left;transition:transform .1s,border-color .2s,background .2s}
+.noise-btn:active{transform:scale(.96)}
+.noise-btn.on{border-color:var(--sea-500);background:var(--sea-600);color:#fff;box-shadow:0 6px 16px rgba(61,101,158,.35)}
+.noise-btn .n{font-size:14px;font-weight:500}
+.noise-btn .d{margin-top:2px;font-size:11px;color:var(--ink-soft)}
+.noise-btn.on .d{color:var(--sea-100)}
+.noise-note{margin-top:6px;font-size:10px;color:var(--ink-faint)}
+.tool-reason{border-radius:16px;border:1px solid var(--coral-300);background:var(--coral-100);padding:12px 16px;font-size:13px;line-height:1.6;color:#9c5230;margin-bottom:16px}
+.tool-reason b{font-weight:500}
+.hotline{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:16px;border:1px solid var(--sea-200);background:rgba(255,255,255,.85);padding:12px 16px;text-decoration:none;transition:border-color .2s,box-shadow .2s}
+.hotline:hover{border-color:var(--sea-400);box-shadow:0 6px 16px rgba(49,64,95,.12)}
+.hotline .name{font-size:14px;font-weight:500;color:var(--ink-deep);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hotline .desc{margin-top:2px;font-size:11px;color:var(--ink-soft);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hotline .call{display:flex;align-items:center;gap:6px;border-radius:999px;background:var(--sea-500);padding:6px 12px;font-size:12px;font-weight:500;color:#fff;flex:none;transition:background .2s}
+.hotline:hover .call{background:var(--sea-600)}
+.tool-tip{margin-top:8px;text-align:center;font-size:11px;color:var(--ink-soft)}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
+<script>
+"use strict";
+/* =====================================================================
+   心灵漂流瓶 · 单文件版
+   数据层以 localStorage 模拟四张表（users / bottles / replies / notices），
+   每个函数都对应未来的 Supabase 调用，迁移时只需替换实现。
+   ===================================================================== */
+var _ = Vue;
+var ref = _.ref, reactive = _.reactive, computed = _.computed, onMounted = _.onMounted, watch = _.watch, nextTick = _.nextTick;
+
+/* ---------------- 常量 ---------------- */
+var MOODS = {
+  study:  { label: "学习压力", dot: "#6b8cc7", sea: ["#a3c2e8", "#6b8fbe"] },
+  exam:   { label: "考试焦虑", dot: "#4f74b8", sea: ["#7fa3d4", "#47689f"] },
+  social: { label: "人际关系", dot: "#9b8ad0", sea: ["#a8a6dd", "#7377b8"] },
+  family: { label: "家庭烦恼", dot: "#d98ba6", sea: ["#b4a4d8", "#7e74b4"] },
+  self:   { label: "自我怀疑", dot: "#63a695", sea: ["#8fc3c0", "#537f96"] },
+  other:  { label: "其他",     dot: "#8fa0bd", sea: ["#a6c1e2", "#6d8fbe"] }
+};
+var MOOD_LIST = Object.keys(MOODS).map(function (k) { return [k, MOODS[k]]; });
+var REPLY_STYLES = {
+  gentle:    { label: "温柔陪伴", chip: "style-gentle" },
+  encourage: { label: "鼓励支持", chip: "style-encourage" },
+  practical: { label: "实用建议", chip: "style-practical" }
+};
+var STYLE_KEYS = ["gentle", "encourage", "practical"];
+
+/* ---------------- 时间工具 ---------------- */
+function nowIso() { return new Date().toISOString(); }
+function timeAgo(iso) {
+  var diff = Date.now() - new Date(iso).getTime();
+  var m = Math.floor(diff / 60000);
+  if (m < 1) return "刚刚";
+  if (m < 60) return m + " 分钟前";
+  var h = Math.floor(m / 60);
+  if (h < 24) return h + " 小时前";
+  var d = Math.floor(h / 24);
+  if (d < 30) return d + " 天前";
+  return fmtDate(iso);
+}
+function fmtDate(iso) { var d = new Date(iso); return (d.getMonth() + 1) + " 月 " + d.getDate() + " 日"; }
+function isToday(iso) { var d = new Date(iso), n = new Date(); return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate(); }
+function dayKey(d) { d = d || new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function daysAgoKey(n) { var d = new Date(); d.setDate(d.getDate() - n); return dayKey(d); }
+function weekStart() { var d = new Date(); var day = d.getDay() === 0 ? 7 : d.getDay(); d.setDate(d.getDate() - (day - 1)); d.setHours(0, 0, 0, 0); return d; }
+function futureIso(days) { return new Date(Date.now() + days * 86400000).toISOString(); }
+function countdownLabel(iso) {
+  var diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0) return "已开启";
+  var d = Math.floor(diff / 86400000);
+  var h = Math.floor((diff % 86400000) / 3600000);
+  if (d > 0) return "还有 " + d + " 天开启";
+  if (h > 0) return "还有 " + h + " 小时开启";
+  return "马上开启";
+}
+function calcStreak(activeDays) {
+  var set = new Set(activeDays); var streak = 0;
+  for (var i = set.has(dayKey()) ? 0 : 1; ; i++) {
+    if (set.has(daysAgoKey(i))) streak++; else break;
+    if (i > 366) break;
+  }
+  return streak;
+}
+
+/* ---------------- 安全 · 温暖守门员 ---------------- */
+var HARD_WORDS = ["傻逼","废物","脑残","智障","贱人","蠢货","白痴","去死","找死","滚蛋","打死你","弄死你","等着瞧","要你好看","恶心死了","垃圾人"];
+var CRISIS_WORDS = ["不想活","活不下去","结束生命","了结自己","自杀","自残","割腕","跳楼","跳下去","活着没意思","没有我会更好","消失算了","再见了世界","遗书","安眠药","解脱"];
+var IMPLICIT_RULES = [
+  { re: /想太多|想多了/, label: "否定感受", rewrite: "你在意的这件事，值得被认真对待，不是想太多。" },
+  { re: /没什么大不了|不至于|多大点事|有什么好(哭|难过|伤心)/, label: "轻视感受", rewrite: "这件事让你这么难受，一定有它的原因，我听到了。" },
+  { re: /矫情|玻璃心|戏精|太脆弱/, label: "贴标签", rewrite: "愿意把心事说出来，本身就是一种勇敢。" },
+  { re: /别人都|怎么就你|大家都没|就你事多/, label: "比较打击", rewrite: "每个人的节奏不同，你不需要和任何人比较。" },
+  { re: /你应该|你必须|你得学会|教你做人/, label: "说教口吻", rewrite: "如果愿意的话，也许可以试试一点点小改变，按你自己的节奏来。" },
+  { re: /至于吗|难道只有你|没长脑子/, label: "反问嘲讽", rewrite: "有这样的感受很正常，很多人都会在某个时刻和你一样。" },
+  { re: /这点(压力|事)|承受不了|这点困难/, label: "贬低压力", rewrite: "压在你身上的，对你来说就是真实的重量。" },
+  { re: /别抱怨|别丧了|快点好起来/, label: "催促情绪", rewrite: "情绪需要时间，慢慢来也没关系，我会在这里陪你。" }
+];
+function checkRisk(text) {
+  var t = text.trim();
+  var crisis = CRISIS_WORDS.filter(function (w) { return t.indexOf(w) >= 0; });
+  if (crisis.length) return { level: "crisis", matched: crisis, rewrite: null };
+  var hard = HARD_WORDS.filter(function (w) { return t.indexOf(w) >= 0; });
+  if (hard.length) return { level: "hard", matched: hard, rewrite: null };
+  for (var i = 0; i < IMPLICIT_RULES.length; i++) {
+    var r = IMPLICIT_RULES[i];
+    if (r.re.test(t)) return { level: "implicit", matched: [r.label], rewrite: r.rewrite };
+  }
+  return { level: "ok", matched: [], rewrite: null };
+}
+function isCrisisText(text) { return CRISIS_WORDS.some(function (w) { return text.indexOf(w) >= 0; }); }
+var WARM_WORDS = ["理解","感受","辛苦","抱抱","陪你","陪伴","慢慢","没关系","已经在","很棒","听见","心疼","支持你","不是你的错","愿意","累了","休息","别怕","我在","照顾"];
+var COOL_WORDS = ["应该","必须","想多","大不了","矫情","别人都","至于吗","别想","快点好","有什么好","这点","别抱怨","脆弱","玻璃心"];
+function warmthScore(text) {
+  var t = text.trim();
+  if (!t) return { score: 0, label: "写点什么吧", tone: "cool" };
+  var score = 50;
+  WARM_WORDS.forEach(function (w) { if (t.indexOf(w) >= 0) score += 7; });
+  COOL_WORDS.forEach(function (w) { if (t.indexOf(w) >= 0) score -= 13; });
+  if (t.length > 30) score += 5;
+  score = Math.max(6, Math.min(98, score));
+  if (score < 40) return { score: score, label: "有点凉，加一点温度吧", tone: "cool" };
+  if (score < 62) return { score: score, label: "微温 · 再多一点关心", tone: "mid" };
+  if (score < 82) return { score: score, label: "温暖 · 像一杯温水", tone: "warm" };
+  return { score: score, label: "很暖 · 像一杯热可可", tone: "warm" };
+}
+var HOTLINES = [
+  { name: "12355 青少年服务台", phone: "12355", desc: "共青团中央 · 青少年心理与法律帮助" },
+  { name: "北京心理危机研究与干预中心", phone: "010-82951332", desc: "24 小时心理危机干预热线" },
+  { name: "希望 24 热线", phone: "400-161-9995", desc: "全国生命危机干预热线" }
+];
+
+/* ---------------- 勋章 / 能量 ---------------- */
+var BADGES = [
+  { id: "voyage", name: "初次远航", desc: "抛出第一个漂流瓶", icon: "sail", earned: function (s) { return s.thrown >= 1; } },
+  { id: "shell", name: "拾贝人", desc: "送出第一条温暖回复", icon: "shell", earned: function (s) { return s.replied >= 1; } },
+  { id: "listener", name: "倾听者", desc: "累计回复 50 条且从未被举报", icon: "wave", earned: function (s) { return s.replied >= 50 && s.reportsAgainst === 0; } },
+  { id: "glimmer", name: "微光", desc: "连续 7 天来到海边", icon: "star", earned: function (s) { return s.streak >= 7; } },
+  { id: "empath", name: "共情大师", desc: "获得 10 次「温暖回复」标签", icon: "heart", earned: function (s) { return s.warmLabels >= 10; } },
+  { id: "lamplighter", name: "点灯人", desc: "为别人点亮 25 次温暖", icon: "sun", earned: function (s) { return s.likesGiven >= 25; } }
+];
+var UNLOCKS = [
+  { id: "skin-amber", type: "skin", name: "琥珀瓶", desc: "暖暖的琥珀色玻璃瓶", cost: 30 },
+  { id: "frame-sea", type: "frame", name: "海浪头像框", desc: "让头像被一圈海浪环绕", cost: 50 },
+  { id: "skin-star", type: "skin", name: "星光瓶", desc: "装着星屑的紫色瓶子", cost: 80 },
+  { id: "theme-dusk", type: "theme", name: "暮色海岸", desc: "淡紫色的黄昏海面主题", cost: 100 },
+  { id: "frame-gold", type: "frame", name: "鎏金头像框", desc: "一圈温柔的金色光晕", cost: 120 },
+  { id: "theme-night", type: "theme", name: "星夜海面", desc: "深蓝夜色与漫天星光", cost: 200 }
+];
+var SKIN_COLORS = {
+  "skin-default": { paper: "#ffe9c9" },
+  "skin-amber": { paper: "#ffd9a8" },
+  "skin-star": { paper: "#e6dcff", glow: "#b9a5f2" }
+};
+var ENERGY_RULES = { throw: 5, catch: 2, reply: 8, like: 1, receiveLike: 2, hug: 1 };
+var ENERGY_LABELS = [[0, "刚醒来的小浪花"], [40, "会发光的贝壳"], [100, "温柔的信风"], [200, "海面上的灯塔"], [400, "整片暖流"]];
+function energyTitle(energy) {
+  var title = ENERGY_LABELS[0][1];
+  ENERGY_LABELS.forEach(function (p) { if (energy >= p[0]) title = p[1]; });
+  return title;
+}
+
+/* ---------------- AI 辅助 ---------------- */
+var AI_CONFIG = {
+  apiKey: "", /* ← 填入你的 API Key 即接入真实大模型，否则使用本地话术库 */
+  apiUrl: "https://api.openai.com/v1/chat/completions",
+  model: "gpt-4o-mini"
+};
+var AI_SYSTEM = "你是一位温暖、共情力强的心理支持伙伴，正在帮助一名学生回复另一个学生写在漂流瓶里的心事。\n请按三种风格各写一条 60 字以内的中文回复：\n1. gentle（温柔陪伴型）：侧重倾听与陪伴，表达\"我在\"。\n2. encourage（鼓励支持型）：肯定对方已有的努力与力量。\n3. practical（实用建议型）：给一个具体、很小、今天就能做的行动。\n硬性要求：避免说教、指责和过度承诺；不许说\"这没什么大不了\"、\"你想多了\"、\"你应该...\"、\"一定会好起来的\"这类空话。\n输出格式：返回 JSON 对象 { \"gentle\": string, \"encourage\": string, \"practical\": string }。";
+var AI_BANK = {
+  study: [
+    { gentle: "被作业和排名追着跑的日子，真的会累。你已经很努力了，我听见了。", encourage: "能在这么多压力里还坚持把瓶子抛出来，说明你没有放弃自己，这很了不起。", practical: "今晚试试只写三件明天最重要的小事，做完一件划掉一件，让心有个落脚点。" },
+    { gentle: "书包装得下课本，却装不下这些心事，辛苦你一个人扛了这么久。", encourage: "你比自己以为的更能撑。回头看看，这一学期你已经翻过了好多座小山。", practical: "学 25 分钟就站起来接杯温水、望望窗外，小小的暂停不是偷懒，是续航。" }
+  ],
+  exam: [
+    { gentle: "考试前的心跳那么快，是因为你很在乎。这份在乎，我收到了。", encourage: "紧张的反面是在意，在意的人不会差。你已经为它准备了这么久。", practical: "睡前把担心写下来放在桌上，告诉自己「明天再处理」，然后慢慢做几次深呼吸。" },
+    { gentle: "倒计时像滴答作响的钟，敲得人心慌。这样的感觉，很多人都有过。", encourage: "分数只能量出一张卷子，量不出你熬过的夜和认真的你。", practical: "给自己定一个「最小复习清单」：每天只保住最基础的三题，稳住就是胜利。" }
+  ],
+  social: [
+    { gentle: "人群里的孤单最安静，也最磨人。谢谢你愿意把它说出来。", encourage: "不是所有人都要走进你的世界。慢慢靠近让你舒服的人，一两个就够了。", practical: "试着明天主动和一个顺路的同学说句话，哪怕只是「一起走吗」，小小的开始就好。" },
+    { gentle: "被晾在一边的感觉不好受，像站在热闹外面看里面。我陪你站一会儿。", encourage: "合群不是唯一的正确答案，你的节奏也值得被尊重。", practical: "找一个让你放松的小圈子：社团、球场或图书馆的固定座位，让熟悉感慢慢长出来。" }
+  ],
+  family: [
+    { gentle: "最亲近的人带来的压力，最难开口。你的委屈，在这里可以安心放着。", encourage: "在期待和自己的想法之间找平衡，是特别难的事，而你在认真地面对它。", practical: "下次想争执时，先在心里数十秒，把「你总是」换成「我希望」，语气会软一点点。" },
+    { gentle: "被安排的感觉，像是自己的声音一直没被听见。这份失落是真的。", encourage: "你不需要立刻让所有人理解你，先好好照顾那个努力的自己。", practical: "把想对家人说的话先写在纸上，不急着说出口，等一个心平气和的时机。" }
+  ],
+  self: [
+    { gentle: "你正在用很高的标准打量自己，所以才会这么疼。但看见你闪光的人，比你以为的多。", encourage: "会自我怀疑的人，往往是因为想变得更好。这份认真，本身就值得肯定。", practical: "今晚写下今天做成的三件小事，哪怕只是按时吃了饭——你值得被自己温柔记录。" },
+    { gentle: "和自己较劲的日子，连呼吸都是累的。先抱抱那个一直努力的自己吧。", encourage: "你不需要完美才值得被喜欢。真实的你，已经足够好了。", practical: "把「我必须做到」换成「我可以试试」，语言的松绑，会让心跟着松一点。" }
+  ],
+  other: [
+    { gentle: "谢谢你愿意把心事放进瓶子。这些情绪沉甸甸的，一个人拿着真的不容易。", encourage: "能被说出来的难过，就已经轻了一半。你迈出的这一步很勇敢。", practical: "今天为自己做一件小小的温柔的事吧，哪怕只是早点睡。海面会一直陪着你。" },
+    { gentle: "瓶子漂到了我手里，你的心事我认真读完了。有这些情绪，不是你的错。", encourage: "情绪像潮水，会涨也会退。你已经在水里站了很久，很厉害了。", practical: "心里发空的时候，去楼下走走，看看树和云，让风吹一会儿。" }
+  ],
+  generic: [
+    { gentle: "我在这里听到了你。不用急着好起来，慢慢说，慢慢走。", encourage: "愿意把心事说出来，本身就是一种力量。你比想象中勇敢。", practical: "此刻试试吸气 4 秒、呼气 6 秒，重复五次，让身体先松下来。" }
+  ]
+};
+function suggestReplies(content, mood) {
+  if (AI_CONFIG.apiKey) {
+    return fetch(AI_CONFIG.apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + AI_CONFIG.apiKey },
+      body: JSON.stringify({
+        model: AI_CONFIG.model, response_format: { type: "json_object" },
+        messages: [ { role: "system", content: AI_SYSTEM }, { role: "user", content: "对方的心事（情绪标签：" + mood + "）：" + content } ],
+        temperature: 0.8
+      })
+    }).then(function (res) { return res.json(); })
+      .then(function (data) {
+        var parsed = JSON.parse((data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "");
+        if (parsed.gentle && parsed.encourage && parsed.practical) return parsed;
+        return mockReplies(mood);
+      }).catch(function () { return mockReplies(mood); });
+  }
+  return new Promise(function (resolve) {
+    setTimeout(function () { resolve(mockReplies(mood)); }, 900 + Math.random() * 500);
+  });
+}
+function mockReplies(mood) {
+  var pool = AI_BANK[mood] || AI_BANK.generic;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+var AI_QUOTES = {
+  exam: ["这周你把焦虑写进了瓶子，也把勇气留给了自己。下一周，慢慢来。", "紧张说明你在乎，在乎的人运气不会太差。"],
+  study: ["压力没有把你压垮，反而让你学会了倾诉。这就是成长的声音。", "你已经走了很远的路，别忘了回头看看身后的脚印。"],
+  social: ["你在学习一件很难的事——和自己舒服地待在一起，也在慢慢靠近别人。", "不必追赶人群的光，你本来就是自己的灯。"],
+  family: ["家的课题最难解，但你没有放弃沟通的可能。这很珍贵。", "先照顾好自己，再去照顾关系。顺序没有错。"],
+  self: ["你对自己严格，是因为想变好。但请记得，你也值得被温柔以待。", "怀疑的雾会散，你一直在往前走，这就够了。"],
+  other: ["这一周的心事，都被海面好好收着。谢谢你还愿意相信温柔。", "生活有时像退潮，但潮水总会再回来。"]
+};
+function weeklyQuote(stats) {
+  var entries = Object.keys(stats.moodCounts).filter(function (k) { return (stats.moodCounts[k] || 0) > 0; });
+  entries.sort(function (a, b) { return (stats.moodCounts[b] || 0) - (stats.moodCounts[a] || 0); });
+  var top = entries[0];
+  var pool = (top && AI_QUOTES[top]) || AI_QUOTES.other;
+  var base = pool[Math.floor(Math.random() * pool.length)];
+  if (stats.warmLabels > 0) return base + " 这周你还收获了 " + stats.warmLabels + " 枚「温暖回复」，你的温柔正在被看见。";
+  if (stats.replied > 0) return base + " 这周你送出了 " + stats.replied + " 条回复，海会记得每一份善意。";
+  return base;
+}
+
+/* ---------------- 数据仓库（localStorage 模拟四张表） ---------------- */
+var DB_KEY = "xlpb.db.v1";
+var _cache = null;
+function dbUid() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return "id-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10);
+}
+function dbLoad() {
+  if (_cache) return _cache;
+  try {
+    var raw = localStorage.getItem(DB_KEY);
+    _cache = raw ? JSON.parse(raw) : { users: [], bottles: [], replies: [], notices: [] };
+  } catch (e) { _cache = { users: [], bottles: [], replies: [], notices: [] }; }
+  return _cache;
+}
+function dbSave() { try { localStorage.setItem(DB_KEY, JSON.stringify(dbLoad())); } catch (e) {} }
+var NAME_A = ["北海的","雾岛","晚风","拾星的","南屿的","慢吞吞的","半山","萤火","浅海的","云边的"];
+var NAME_B = ["鲸","信","信使","人","灯塔","云","听雨","值班员","邮差","月亮"];
+var AVATAR_HUES = ["#8cb8e6", "#a996d6", "#f09f7d", "#63a695", "#ea9cb2"];
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function makeUser() {
+  return { id: dbUid(), nickname: pick(NAME_A) + pick(NAME_B), avatarHue: pick(AVATAR_HUES), skin: "skin-default", frame: "frame-none", theme: "dawn", energy: 0, unlocked: [], activeDays: [], createdAt: nowIso() };
+}
+function dbMe() { return dbLoad().users[0]; }
+function dbBoot() {
+  var db = dbLoad();
+  var me = db.users[0];
+  if (!me) { me = makeUser(); db.users.push(me); }
+  var today = dayKey();
+  if (me.activeDays.indexOf(today) < 0) { me.activeDays.push(today); dbSave(); }
+  db.bottles.forEach(function (b) {
+    if (b.sealedUntil && new Date(b.sealedUntil).getTime() <= Date.now() && !b.openedNoticeSent) {
+      b.openedNoticeSent = true;
+      if (b.target === "self") db.notices.push({ id: dbUid(), userId: b.authorId, bottleId: b.id, kind: "opened", read: false, createdAt: nowIso() });
+    }
+  });
+  dbSave();
+  return me;
+}
+function dbUpdateMe(patch) { var u = dbMe(); Object.assign(u, patch); dbSave(); return u; }
+function dbRerollName() { return dbUpdateMe({ nickname: pick(NAME_A) + pick(NAME_B), avatarHue: pick(AVATAR_HUES) }); }
+function dbAddEnergy(n) {
+  var u = dbMe(); u.energy = Math.max(0, u.energy + n);
+  var today = dayKey(); if (u.activeDays.indexOf(today) < 0) u.activeDays.push(today);
+  dbSave(); return u;
+}
+function dbSpendEnergy(cost) { var u = dbMe(); if (u.energy < cost) return false; u.energy -= cost; dbSave(); return true; }
+function isUnsealed(b) { return !b.sealedUntil || new Date(b.sealedUntil).getTime() <= Date.now(); }
+function listDrifting() {
+  return dbLoad().bottles.filter(function (b) { return b.target === "ocean" && isUnsealed(b); })
+    .sort(function (a, b) { return b.createdAt.localeCompare(a.createdAt); });
+}
+function listMine() {
+  var id = dbMe().id;
+  return dbLoad().bottles.filter(function (b) { return b.authorId === id; }).sort(function (a, b) { return b.createdAt.localeCompare(a.createdAt); });
+}
+function getBottle(id) { return dbLoad().bottles.find(function (b) { return b.id === id; }); }
+function catchRandom(excludeId) {
+  var id = dbMe().id;
+  var pool = listDrifting().filter(function (b) { return b.authorId !== id && b.id !== excludeId; });
+  if (!pool.length) return null;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+function createBottle(input) {
+  var u = dbMe();
+  var bottle = { id: dbUid(), authorId: u.id, content: input.content, mood: input.mood, skin: u.skin, hugs: 0, huggedBy: [], wantsReply: input.wantsReply, target: input.target, sealedUntil: input.sealedUntil, openedNoticeSent: !input.sealedUntil, createdAt: nowIso() };
+  dbLoad().bottles.push(bottle);
+  dbAddEnergy(ENERGY_RULES.throw);
+  return bottle;
+}
+function toggleHug(bottleId) {
+  var b = getBottle(bottleId); var id = dbMe().id;
+  var idx = b.huggedBy.indexOf(id);
+  if (idx >= 0) { b.huggedBy.splice(idx, 1); b.hugs = Math.max(0, b.hugs - 1); dbSave(); return { bottle: b, hugged: false }; }
+  b.huggedBy.push(id); b.hugs += 1; dbAddEnergy(ENERGY_RULES.hug); dbSave();
+  return { bottle: b, hugged: true };
+}
+function listReplies(bottleId) {
+  return dbLoad().replies.filter(function (r) { return r.bottleId === bottleId; })
+    .sort(function (a, b) { return b.likes - a.likes || a.createdAt.localeCompare(b.createdAt); });
+}
+function addReply(bottleId, content, style) {
+  var u = dbMe();
+  var reply = { id: dbUid(), bottleId: bottleId, authorId: u.id, content: content, style: style, likes: 0, likedBy: [], reports: 0, reportedBy: [], createdAt: nowIso() };
+  dbLoad().replies.push(reply);
+  dbAddEnergy(ENERGY_RULES.reply);
+  var bottle = getBottle(bottleId);
+  if (bottle && bottle.wantsReply && bottle.authorId !== u.id) {
+    dbLoad().notices.push({ id: dbUid(), userId: bottle.authorId, bottleId: bottleId, kind: "reply", read: false, createdAt: nowIso() });
+  }
+  dbSave(); return reply;
+}
+function toggleReplyLike(replyId) {
+  var r = dbLoad().replies.find(function (x) { return x.id === replyId; });
+  var id = dbMe().id; var idx = r.likedBy.indexOf(id);
+  if (idx >= 0) { r.likedBy.splice(idx, 1); r.likes = Math.max(0, r.likes - 1); dbSave(); return { reply: r, liked: false }; }
+  r.likedBy.push(id); r.likes += 1; dbAddEnergy(ENERGY_RULES.like);
+  if (r.authorId !== id) dbLoad().notices.push({ id: dbUid(), userId: r.authorId, bottleId: r.bottleId, kind: "like", read: false, createdAt: nowIso() });
+  dbSave(); return { reply: r, liked: true };
+}
+function reportReply(replyId) {
+  var r = dbLoad().replies.find(function (x) { return x.id === replyId; });
+  var id = dbMe().id;
+  if (r.reportedBy.indexOf(id) < 0) { r.reportedBy.push(id); r.reports += 1; dbSave(); }
+  return r;
+}
+function listMyReplies() {
+  var id = dbMe().id;
+  return dbLoad().replies.filter(function (r) { return r.authorId === id; }).sort(function (a, b) { return b.createdAt.localeCompare(a.createdAt); });
+}
+function listNotices() {
+  var id = dbMe().id;
+  return dbLoad().notices.filter(function (n) { return n.userId === id; }).sort(function (a, b) { return b.createdAt.localeCompare(a.createdAt); });
+}
+function unreadCount() { return listNotices().filter(function (n) { return !n.read; }).length; }
+function markAllRead() { var id = dbMe().id; dbLoad().notices.forEach(function (n) { if (n.userId === id) n.read = true; }); dbSave(); }
+function isWarmReply(reply) {
+  var list = listReplies(reply.bottleId);
+  return list.length > 0 && list[0].id === reply.id && reply.likes > 0;
+}
+function weeklyStats() {
+  var u = dbMe(); var db = dbLoad(); var ws = weekStart();
+  var thrown = db.bottles.filter(function (b) { return b.authorId === u.id && new Date(b.createdAt) >= ws; });
+  var mine = db.replies.filter(function (r) { return r.authorId === u.id && new Date(r.createdAt) >= ws; });
+  var moodCounts = {};
+  thrown.forEach(function (b) { moodCounts[b.mood] = (moodCounts[b.mood] || 0) + 1; });
+  var likesGiven = 0;
+  db.replies.forEach(function (r) { if (r.likedBy.indexOf(u.id) >= 0 && new Date(r.createdAt) >= ws) likesGiven++; });
+  return {
+    thrown: thrown.length, replied: mine.length,
+    warmLabels: mine.filter(function (r) { return isWarmReply(r); }).length,
+    likesGiven: likesGiven, hugs: thrown.reduce(function (a, b) { return a + b.hugs; }, 0),
+    moodCounts: moodCounts,
+    daysActive: u.activeDays.filter(function (d) { return new Date(d + "T00:00:00") >= ws; }).length
+  };
+}
+function lifetimeStats() {
+  var u = dbMe(); var db = dbLoad();
+  var myReplies = db.replies.filter(function (r) { return r.authorId === u.id; });
+  return {
+    thrown: db.bottles.filter(function (b) { return b.authorId === u.id; }).length,
+    replied: myReplies.length,
+    reportsAgainst: myReplies.reduce(function (a, r) { return a + r.reports; }, 0),
+    warmLabels: myReplies.filter(function (r) { return isWarmReply(r); }).length,
+    likesGiven: db.replies.reduce(function (a, r) { return a + (r.likedBy.indexOf(u.id) >= 0 ? 1 : 0); }, 0),
+    streak: calcStreak(u.activeDays)
+  };
+}
+function todayOcean() {
+  var db = dbLoad();
+  var bottlesToday = db.bottles.filter(function (b) { return isToday(b.createdAt) && b.target === "ocean"; });
+  var repliesToday = db.replies.filter(function (r) { return isToday(r.createdAt); });
+  var moodCounts = {};
+  bottlesToday.forEach(function (b) { moodCounts[b.mood] = (moodCounts[b.mood] || 0) + 1; });
+  var dominant = null, max = 0;
+  Object.keys(moodCounts).forEach(function (k) { if (moodCounts[k] > max) { max = moodCounts[k]; dominant = k; } });
+  var sea = dominant ? MOODS[dominant].sea : ["#a6c1e2", "#6d8fbe"];
+  return {
+    bottlesToday: bottlesToday.length, repliesToday: repliesToday.length,
+    dominantMood: dominant, sea: sea,
+    drifting: listDrifting().filter(function (b) { return b.authorId !== dbMe().id; })
+  };
+}
+
+/* ---------------- 图标（SVG 字典） ---------------- */
+var ICON_PATHS = {
+  heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z"/>',
+  heartFilled: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z"/>',
+  sparkle: '<path d="M12 2l2.2 7.8L22 12l-7.8 2.2L12 22l-2.2-7.8L2 12l7.8-2.2Z"/>',
+  send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
+  waves: '<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/><path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"/>',
+  shell: '<path d="M12 4c-5 0-8 4.5-8 9 0 3.9 3.6 7 8 7s8-3.1 8-7c0-4.5-3-9-8-9Z"/><path d="M12 20V4"/><path d="M12 20 5.5 6.5"/><path d="M12 20 18.5 6.5"/>',
+  sail: '<path d="M22 18H2a4 4 0 0 0 4 4h12a4 4 0 0 0 4-4Z"/><path d="M21 14 10 2 3 14h18Z"/><path d="M12 2v16"/>',
+  star: '<path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21l1.2-6.9-5-4.9 6.9-1Z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.9 4.9 1.4 1.4"/><path d="m17.7 17.7 1.4 1.4"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.3 17.7-1.4 1.4"/><path d="m19.1 4.9-1.4 1.4"/>',
+  bottle: '<path d="M10 2h4"/><path d="M12 2v4c0 1.5 4 3 4 7v6a3 3 0 0 1-3 3h-2a3 3 0 0 1-3-3v-6c0-4 4-5.5 4-7V2Z"/>',
+  close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  shield: '<path d="M12 22s8-3.6 8-10V5l-8-3-8 3v7c0 6.4 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/>',
+  phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.5 2.8.7a2 2 0 0 1 1.7 2Z"/>',
+  wind: '<path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2"/><path d="M9.6 4.6A2 2 0 1 1 11 8H2"/><path d="M12.6 19.4A2 2 0 1 0 14 16H2"/>',
+  home: '<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M9 22V12h6v10"/>',
+  plus: '<path d="M12 5v14"/><path d="M5 12h14"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/>',
+  flag: '<path d="M4 22V4c4-2 8 2 12 0v10c-4 2-8-2-12 0"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  refresh: '<path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/>',
+  lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/>'
+};
+var FILLED_ICONS = { heartFilled: true, sparkle: true };
+function ic(name, cls) {
+  var filled = FILLED_ICONS[name];
+  return '<svg class="ic' + (filled ? ' filled' : '') + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICON_PATHS[name] + '</svg>';
+}
+function spinner(cls) {
+  return '<svg class="ic anim-spin-soft' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-opacity="0.25" stroke-width="3"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>';
+}
+
+/* ---------------- 瓶子 SVG ---------------- */
+function glassBottleSvg() {
+  return '<svg viewBox="0 0 120 210" style="width:100%;height:auto" aria-hidden="true">' +
+    '<defs><linearGradient id="glassGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ffffff" stop-opacity="0.65"/><stop offset="45%" stop-color="#dcebff" stop-opacity="0.3"/><stop offset="100%" stop-color="#aecbf5" stop-opacity="0.45"/></linearGradient>' +
+    '<linearGradient id="corkGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#e9c79c"/><stop offset="100%" stop-color="#cfa377"/></linearGradient></defs>' +
+    '<path d="M52 30 L68 30 L68 52 C68 62 84 70 84 92 L84 168 C84 188 73 200 60 200 C47 200 36 188 36 168 L36 92 C36 70 52 62 52 52 Z" fill="url(#glassGrad)" stroke="#7fa2d8" stroke-opacity="0.6" stroke-width="2.5" stroke-linejoin="round"/>' +
+    '<path d="M36 152 C44 148 54 154 60 151 C68 148 78 150 84 149 L84 168 C84 188 73 200 60 200 C47 200 36 188 36 168 Z" fill="#9cc4f0" opacity="0.55"/>' +
+    '<g transform="rotate(-8 60 138)"><rect x="45" y="112" width="31" height="46" rx="3" fill="#fff6e3" stroke="#e5d0a8" stroke-width="1.5"/><line x1="51" y1="122" x2="70" y2="122" stroke="#d9c39a" stroke-width="1.6" stroke-linecap="round"/><line x1="51" y1="130" x2="66" y2="130" stroke="#d9c39a" stroke-width="1.6" stroke-linecap="round"/><line x1="51" y1="138" x2="70" y2="138" stroke="#d9c39a" stroke-width="1.6" stroke-linecap="round"/><line x1="51" y1="146" x2="62" y2="146" stroke="#d9c39a" stroke-width="1.6" stroke-linecap="round"/></g>' +
+    '<rect x="50" y="12" width="20" height="16" rx="3" fill="url(#corkGrad)"/><ellipse cx="60" cy="13" rx="10" ry="3" fill="#d9b386"/>' +
+    '<path d="M45 78 C44 100 44 130 46 158" stroke="#ffffff" stroke-opacity="0.75" stroke-width="4" stroke-linecap="round" fill="none"/></svg>';
+}
+function miniBottleSvg(skin) {
+  var c = SKIN_COLORS[skin] || SKIN_COLORS["skin-default"];
+  var glow = c.glow ? '<ellipse cx="32" cy="52" rx="26" ry="34" fill="' + c.glow + '" opacity="0.35"/>' : '';
+  return '<svg viewBox="0 0 64 96" style="width:100%;height:auto" aria-hidden="true">' + glow +
+    '<path d="M27 16 L37 16 L37 27 C37 32 46 36 46 47 L46 78 C46 88 40 93 32 93 C24 93 18 88 18 78 L18 47 C18 36 27 32 27 27 Z" fill="#dcebff" fill-opacity="0.55" stroke="#8fb0dc" stroke-width="2"/>' +
+    '<path d="M18 68 C24 65 30 69 32 67 C36 65 42 66 46 65 L46 78 C46 88 40 93 32 93 C24 93 18 88 18 78 Z" fill="#9cc4f0" opacity="0.5"/>' +
+    '<g transform="rotate(-10 32 58)"><rect x="25" y="48" width="15" height="22" rx="2" fill="' + c.paper + '" stroke="#e0c69b" stroke-width="1"/><line x1="28" y1="54" x2="37" y2="54" stroke="#d3b98d" stroke-width="1" stroke-linecap="round"/><line x1="28" y1="59" x2="35" y2="59" stroke="#d3b98d" stroke-width="1" stroke-linecap="round"/><line x1="28" y1="64" x2="37" y2="64" stroke="#d3b98d" stroke-width="1" stroke-linecap="round"/></g>' +
+    '<rect x="26" y="7" width="12" height="8" rx="2" fill="#d9b386"/>' +
+    '<path d="M23 40 C22.5 52 22.5 64 23.5 74" stroke="#ffffff" stroke-opacity="0.8" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>';
+}
+
+/* ---------------- 全局状态 ---------------- */
+var store = reactive({
+  view: "home",
+  user: null,
+  toasts: [],
+  toolboxOpen: false,
+  toolboxReason: null,
+  catchInitial: null,
+  catchKey: 0,
+  unread: 0
+});
+var _toastId = 1;
+function toast(type, msg) {
+  var id = _toastId++;
+  store.toasts.push({ id: id, type: type, msg: msg });
+  setTimeout(function () {
+    var i = store.toasts.findIndex(function (t) { return t.id === id; });
+    if (i >= 0) store.toasts.splice(i, 1);
+  }, 2800);
+}
+function go(view) {
+  if (view === "catch") { store.catchInitial = null; store.catchKey++; }
+  store.view = view;
+  window.scrollTo({ top: 0 });
+}
+function openBottleById(id) {
+  store.catchInitial = id;
+  store.catchKey++;
+  store.view = "catch";
+  window.scrollTo({ top: 0 });
+}
+function openToolbox(reason) { store.toolboxReason = reason || null; store.toolboxOpen = true; }
+function refreshUser() { store.user = Object.assign({}, dbMe()); store.unread = unreadCount(); }
+
+/* ---------------- 组件：海洋场景 ---------------- */
+var STARS = [];
+for (var _i = 0; _i < 64; _i++) STARS.push({ left: (_i * 37 + 11) % 100, top: (_i * 23 + 7) % 52, delay: (_i % 7) * 0.55, dur: 2.4 + (_i % 5) * 0.5, size: 2 + (_i % 3) });
+
+var OceanScene = {
+  props: { theme: String, sea: Array, bottles: Array, bottleCountToday: Number, repliesToday: Number },
+  emits: ["bottle-click"],
+  setup: function (props, ctx) {
+    var night = computed(function () { return props.theme === "night"; });
+    var amp = computed(function () { return Math.min(1, props.bottleCountToday / 12); });
+    var starCount = computed(function () { return Math.min(14 + props.repliesToday * 3, 64); });
+    var waves = computed(function () {
+      return [
+        { dur: 17, h: 72 + amp.value * 22, color: props.sea[0], opacity: 0.45, reverse: false },
+        { dur: 12, h: 92 + amp.value * 26, color: props.sea[0], opacity: 0.75, reverse: true },
+        { dur: 8.5, h: 110 + amp.value * 30, color: props.sea[1], opacity: 1, reverse: false }
+      ];
+    });
+    function waveSvg(color) { return '<svg viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M0,60 C200,105 400,15 600,60 C800,105 1000,15 1200,60 L1200,120 L0,120 Z" fill="' + color + '"/></svg>'; }
+    return { night: night, stars: STARS, starCount: starCount, waves: waves, waveSvg: waveSvg, miniBottleSvg: miniBottleSvg, onClick: function (b) { ctx.emit("bottle-click", b); } };
+  },
+  template: '\
+<div class="ocean" :style="{ background: \'linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 52%, var(--sky3) 100%)\' }">\
+  <div class="stars" :style="{ opacity: \'var(--star-op)\' }" aria-hidden="true">\
+    <span v-for="(s, i) in stars.slice(0, starCount)" :key="i" class="star anim-twinkle" :style="{ left: s.left + \'%\', top: s.top + \'%\', width: s.size + \'px\', height: s.size + \'px\', animationDelay: s.delay + \'s\', animationDuration: s.dur + \'s\' }"></span>\
+  </div>\
+  <div class="sun anim-sun" :style="{ background: night ? \'radial-gradient(circle at 38% 35%, #f4f6ff, #c9d4f2 70%)\' : \'radial-gradient(circle at 38% 35%, #fff3d9, #ffd98f 75%)\', boxShadow: \'0 0 60px 18px var(--glow)\' }" aria-hidden="true">\
+    <span v-if="night" class="crater"></span>\
+  </div>\
+  <template v-if="!night">\
+    <div aria-hidden="true">\
+      <div class="cloud anim-cloud" style="top:16%;height:32px;width:160px;animation-duration:75s"></div>\
+      <div class="cloud anim-cloud" style="top:30%;height:24px;width:112px;opacity:.8;animation-duration:95s;animation-delay:-30s"></div>\
+      <div class="cloud anim-cloud" style="top:8%;height:28px;width:128px;opacity:.85;animation-duration:110s;animation-delay:-60s"></div>\
+    </div>\
+    <svg viewBox="0 0 40 14" class="gull anim-gull" style="animation-duration:34s" aria-hidden="true"><path d="M2 10 Q10 2 20 9 Q30 2 38 10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.7"/></svg>\
+  </template>\
+  <div style="position:absolute;left:0;right:0;bottom:40px" aria-hidden="true">\
+    <span v-for="(x, i) in [18, 46, 74]" :key="i" class="bubble anim-bubble" :style="{ left: x + \'%\', animationDelay: (i * 1.6) + \'s\' }"></span>\
+  </div>\
+  <button v-for="(b, i) in bottles.slice(0, 5)" :key="b.id" class="float-bottle anim-mini-bob" aria-label="打捞这个漂流瓶" :style="{ left: (10 + ((i * 19) % 68)) + \'%\', bottom: (86 + (i % 3) * 26) + \'px\', animationDelay: (i * 0.8) + \'s\' }" @click="onClick(b)">\
+    <span v-html="miniBottleSvg(b.skin)" style="filter:drop-shadow(0 8px 14px rgba(30,60,110,.35))"></span>\
+  </button>\
+  <div v-for="(w, i) in waves" :key="i" class="wave" :style="{ height: w.h + \'px\', opacity: w.opacity }" aria-hidden="true">\
+    <div class="track anim-wave" :style="{ animationDuration: w.dur + \'s\', animationDirection: w.reverse ? \'reverse\' : undefined }"><span v-html="waveSvg(w.color)" style="width:50%"></span><span v-html="waveSvg(w.color)" style="width:50%"></span></div>\
+  </div>\
+  <div class="foam" aria-hidden="true"></div>\
+  <div class="ocean-overlay"><slot></slot></div>\
+</div>'
+};
+
+/* ---------------- 组件：守门员弹窗 ---------------- */
+var CareAlert = {
+  props: { tone: String, matched: Array, rewrite: String },
+  emits: ["close", "use-rewrite"],
+  setup: function (props, ctx) {
+    onMounted(function () {
+      var onKey = function (e) { if (e.key === "Escape") ctx.emit("close"); };
+      window.addEventListener("keydown", onKey);
+      window._careKey = onKey;
+    });
+    return { ic: ic, hard: computed(function () { return props.tone === "hard"; }) };
+  },
+  unmounted: function () { if (window._careKey) { window.removeEventListener("keydown", window._careKey); window._careKey = null; } },
+  template: '\
+<div class="care-overlay">\
+  <button class="bg anim-backdrop-in" aria-label="关闭提醒" @click="$emit(\'close\')" style="position:absolute;inset:0;background:rgba(22,34,63,.55);backdrop-filter:blur(3px);cursor:default"></button>\
+  <div class="care-box anim-pop" role="alertdialog" aria-modal="true" :class="hard ? \'care-hard\' : \'care-implicit\'">\
+    <div class="care-head">\
+      <span class="care-ico"><span v-html="ic(hard ? \'shield\' : \'heartFilled\', \'ic-l\')"></span></span>\
+      <div>\
+        <h4 class="care-title">{{ hard ? "这条消息被拦下了" : "温暖守门员 · 轻轻提醒" }}</h4>\
+        <p class="care-body">{{ hard ? "这句话里含有攻击性语言，可能会伤害到别人，所以不能发送。这片海，只接纳温柔。" : "这句话可能会让对方感到被否定哦，要不要试试换一种更接纳的表达方式？" }}</p>\
+      </div>\
+    </div>\
+    <div v-if="matched.length" class="care-tags"><span class="lbl">检测到：</span><span v-for="m in matched.slice(0,4)" :key="m" class="care-tag">“{{ m }}”</span></div>\
+    <div v-if="!hard && rewrite" class="care-rewrite">\
+      <p class="lbl">试试这样说 👇</p><p>{{ rewrite }}</p>\
+      <button class="btn btn-sea" style="margin-top:12px;font-size:12px;padding:8px 16px" @click="$emit(\'use-rewrite\', rewrite)">换成这句，继续编辑</button>\
+    </div>\
+    <button class="btn" :class="hard ? \'\' : \'\'" :style="{ marginTop:\'20px\', width:\'100%\', justifyContent:\'center\', background: hard ? \'var(--rose-400)\' : \'var(--sea-600)\', color:\'#fff\', boxShadow:\'0 6px 18px rgba(0,0,0,.15)\' }" @click="$emit(\'close\')">好的，我换个说法</button>\
+  </div>\
+</div>'
+};
+
+/* ---------------- 组件：急救工具箱 ---------------- */
+var ToolboxModal = {
+  props: { reason: String },
+  emits: ["close"],
+  setup: function (props, ctx) {
+    var running = ref(false), phase = ref(0), left = ref(4), cycles = ref(0), done = ref(false);
+    var PHASES = [ { label: "用鼻子吸气", sec: 4, scale: 1 }, { label: "轻轻屏住", sec: 7, scale: 1 }, { label: "缓缓呼气", sec: 8, scale: 0.55 } ];
+    left.value = PHASES[0].sec;
+    var timer = null;
+    function tick() {
+      timer = setInterval(function () {
+        if (left.value > 1) { left.value--; return; }
+        var np = (phase.value + 1) % PHASES.length;
+        if (np === 0) {
+          cycles.value++;
+          if (cycles.value >= 4) { stop(); done.value = true; }
+        }
+        phase.value = np; left.value = PHASES[np].sec;
+      }, 1000);
+    }
+    function start() { running.value = true; tick(); }
+    function stop() { running.value = false; if (timer) { clearInterval(timer); timer = null; } }
+    function reset() { stop(); phase.value = 0; left.value = PHASES[0].sec; cycles.value = 0; done.value = false; }
+    var ballScale = computed(function () { return (running.value || done.value) ? PHASES[phase.value].scale : 0.8; });
+    var ballTrans = computed(function () { return running.value ? PHASES[phase.value].sec + "s" : "0.6s"; });
+    /* 白噪音 */
+    var playing = ref(null);
+    var ctxRef = null, nodesRef = null;
+    function makeNoiseBuffer(ac, brown) {
+      var len = ac.sampleRate * 2; var buf = ac.createBuffer(1, len, ac.sampleRate); var data = buf.getChannelData(0); var last = 0;
+      for (var i = 0; i < len; i++) {
+        var white = Math.random() * 2 - 1;
+        if (brown) { last = (last + 0.02 * white) / 1.02; data[i] = last * 3.2; } else { data[i] = white; }
       }
-    </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+      return buf;
+    }
+    function stopNoise() { try { if (nodesRef) { nodesRef.src.stop(); if (nodesRef.lfo) nodesRef.lfo.stop(); } } catch (e) {} nodesRef = null; playing.value = null; }
+    function startNoise(kind) {
+      if (playing.value === kind) { stopNoise(); return; }
+      stopNoise();
+      var ac = ctxRef || new (window.AudioContext || window.webkitAudioContext)(); ctxRef = ac;
+      if (ac.state === "suspended") ac.resume();
+      var src = ac.createBufferSource(); src.buffer = makeNoiseBuffer(ac, kind === "sea"); src.loop = true;
+      var gain = ac.createGain(); var lfo = null;
+      if (kind === "rain") {
+        var bp = ac.createBiquadFilter(); bp.type = "bandpass"; bp.frequency.value = 2600; bp.Q.value = 0.7;
+        gain.gain.value = 0.09; src.connect(bp); bp.connect(gain); gain.connect(ac.destination);
+      } else {
+        var lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 320;
+        gain.gain.value = 0.14;
+        lfo = ac.createOscillator(); lfo.frequency.value = 0.12;
+        var lg = ac.createGain(); lg.gain.value = 0.07; lfo.connect(lg); lg.connect(gain.gain); lfo.start();
+        src.connect(lp); lp.connect(gain); gain.connect(ac.destination);
+      }
+      src.start(); nodesRef = { src: src, lfo: lfo }; playing.value = kind;
+    }
+    onMounted(function () {
+      var onKey = function (e) { if (e.key === "Escape") ctx.emit("close"); };
+      window.addEventListener("keydown", onKey); window._toolKey = onKey;
+    });
+    return { running: running, phase: phase, left: left, cycles: cycles, done: done, PHASES: PHASES, start: start, reset: reset, ballScale: ballScale, ballTrans: ballTrans, playing: playing, startNoise: startNoise, hotlines: HOTLINES, ic: ic };
+  },
+  unmounted: function () {
+    if (window._toolKey) { window.removeEventListener("keydown", window._toolKey); window._toolKey = null; }
+  },
+  template: '\
+<div class="overlay">\
+  <button class="bg anim-backdrop-in" aria-label="关闭" @click="$emit(\'close\')"></button>\
+  <div class="dialog anim-modal-in" role="dialog" aria-modal="true" aria-label="急救工具箱">\
+    <div class="dialog-head"><div><h3>急救工具箱</h3><p class="sub">情绪汹涌的时候，先照顾好自己</p></div><button class="icon-btn" aria-label="关闭" @click="$emit(\'close\')" v-html="ic(\'close\')"></button></div>\
+    <div class="dialog-body">\
+      <div v-if="reason" class="tool-reason"><b>我们注意到你写下了很沉重的心事。</b><br/>在继续之前，请先看看这些能立刻帮到你的资源——你值得被专业地对待。</div>\
+      <div class="breath-box">\
+        <p class="breath-title">4-7-8 呼吸练习</p>\
+        <div class="breath-stage">\
+          <span class="breath-halo"></span>\
+          <span class="breath-ball" :style="{ transform: \'scale(\' + ballScale + \')\', transition: \'transform \' + ballTrans + \' ease-in-out\' }"></span>\
+          <span class="breath-label"><span class="ph">{{ done ? "做得很好" : (running ? PHASES[phase].label : "准备好了吗") }}</span><span class="num">{{ done ? "🌿" : (running ? left : "") }}</span></span>\
+        </div>\
+        <p class="breath-sub">{{ done ? "四轮呼吸完成，感受一下此刻的身体" : "第 " + Math.min(cycles + 1, 4) + " / 4 轮" }}</p>\
+        <div class="breath-actions">\
+          <button v-if="!running && !done" class="btn btn-sea" @click="start">开始呼吸</button>\
+          <button v-else class="btn btn-ghost" @click="reset">{{ done ? "再来一次" : "停下来" }}</button>\
+        </div>\
+      </div>\
+      <div style="margin-top:16px">\
+        <p class="section-label" style="font-family:var(--font-display);color:var(--ink-deep)">白噪音 · 让耳朵先静下来</p>\
+        <div class="noise-row">\
+          <button class="noise-btn" :class="{ on: playing === \'rain\' }" :aria-pressed="playing === \'rain\'" @click="startNoise(\'rain\')"><span class="n">雨声</span><span class="d">{{ playing === \'rain\' ? "正在播放 · 点击停止" : "淅淅沥沥的小雨" }}</span></button>\
+          <button class="noise-btn" :class="{ on: playing === \'sea\' }" :aria-pressed="playing === \'sea\'" @click="startNoise(\'sea\')"><span class="n">海浪</span><span class="d">{{ playing === \'sea\' ? "正在播放 · 点击停止" : "缓慢起伏的潮汐" }}</span></button>\
+        </div>\
+        <p class="noise-note">声音由浏览器实时合成，无需下载 · 仅在本地播放</p>\
+      </div>\
+      <div style="margin-top:16px">\
+        <p class="section-label" style="font-family:var(--font-display);color:var(--ink-deep)">紧急心理热线 · 一键拨打</p>\
+        <div style="display:flex;flex-direction:column;gap:8px">\
+          <a v-for="h in hotlines" :key="h.phone" class="hotline" :href="\'tel:\' + h.phone.replace(/-/g, \'\')"><span style="min-width:0"><span class="name">{{ h.name }}</span><span class="desc" style="display:block">{{ h.desc }}</span></span><span class="call"><span v-html="ic(\'phone\', \'ic-s\')"></span>{{ h.phone }}</span></a>\
+        </div>\
+        <p class="tool-tip">如果身边有人正处于危险中，请直接拨打 110 / 120</p>\
+      </div>\
+    </div>\
+  </div>\
+</div>'
+};
+
+/* ---------------- 视图：首页 ---------------- */
+var SEA_QUOTES = [
+  "把心事写下来，它就轻了一半。",
+  "每一颗星星，都是一句没说出口的『我懂你』。",
+  "海浪不会评判任何一滴水。",
+  "你不需要时刻坚强，海面也有起雾的时候。",
+  "被捞起的瓶子，都在等一句温柔的回音。"
+];
+var MOOD_WEATHER = {
+  study: "今天的学习压力像一片低云，海的色调沉了一些。别担心，云会散的。",
+  exam: "考试焦虑让海面泛起深蓝。深呼吸，浪再高也会退。",
+  social: "人际关系的薄雾飘过海面，紫色是心事，也是温柔。",
+  family: "家的牵挂让海面染上暮色。慢慢来，港湾一直在。",
+  self: "自我怀疑像退潮，露出的沙地上其实写满了你走过的路。",
+  other: "今天的海面很平静，正适合把心事轻轻放下。"
+};
+var HomeView = {
+  components: { OceanScene: OceanScene },
+  setup: function () {
+    var ocean = todayOcean();
+    var quoteIdx = ref(0);
+    var quoteTimer = setInterval(function () { quoteIdx.value = (quoteIdx.value + 1) % SEA_QUOTES.length; }, 6000);
+    var night = computed(function () { return store.user && store.user.theme === "night"; });
+    var theme = computed(function () { return store.user ? store.user.theme : "dawn"; });
+    var energyT = computed(function () { return store.user ? energyTitle(store.user.energy) : ""; });
+    var onBeforeUnmount = _.onBeforeUnmount;
+    onBeforeUnmount(function () { clearInterval(quoteTimer); });
+    return {
+      ocean: ocean, quoteIdx: quoteIdx, quote: computed(function () { return SEA_QUOTES[quoteIdx.value]; }),
+      night: night, theme: theme, energyT: energyT,
+      nickname: computed(function () { return store.user ? store.user.nickname : ""; }),
+      energy: computed(function () { return store.user ? store.user.energy : 0; }),
+      moodLabel: computed(function () { return ocean.dominantMood ? MOODS[ocean.dominantMood].label : ""; }),
+      weather: computed(function () { return ocean.dominantMood ? MOOD_WEATHER[ocean.dominantMood] : "海面还很安静，大家都在等第一个勇敢的人。不如由你开始？"; }),
+      ic: ic, go: go, openBottleById: openBottleById
+    };
+  },
+  template: '\
+<div class="anim-fade-up">\
+  <OceanScene :theme="theme" :sea="ocean.sea" :bottles="ocean.drifting" :bottle-count-today="ocean.bottlesToday" :replies-today="ocean.repliesToday" @bottle-click="openBottleById" style="height:62vh;min-height:420px;border-radius:0 0 32px 32px">\
+    <div class="home-inner">\
+      <div class="home-top">\
+        <p class="home-eyebrow" :style="{ color: night ? \'var(--sea-200)\' : \'var(--sea-600)\' }"><span v-html="ic(\'waves\', \'ic-s\')"></span>匿名心理互助 · 面向学生</p>\
+        <h1 class="home-title" :style="{ color: night ? \'#fff\' : \'var(--ink-deep)\' }">心灵漂流瓶</h1>\
+        <p class="home-slogan" :style="{ color: night ? \'var(--sea-100)\' : \'var(--ink-soft)\' }">把心事放进瓶子，让温暖漂到你身边</p>\
+      </div>\
+      <div class="legend">\
+        <span :style="{ background: night ? \'rgba(255,255,255,.15)\' : \'rgba(255,255,255,.7)\', color: night ? \'#fff\' : \'var(--ink)\' }">🌊 今日 {{ ocean.bottlesToday }} 个漂流瓶 · 海浪因心事起伏</span>\
+        <span :style="{ background: night ? \'rgba(255,255,255,.15)\' : \'rgba(255,255,255,.7)\', color: night ? \'#fff\' : \'var(--ink)\' }">✨ 今日 {{ ocean.repliesToday }} 条温暖回复 · 化作星光升起</span>\
+        <span v-if="ocean.dominantMood" :style="{ background: night ? \'rgba(255,255,255,.15)\' : \'rgba(255,255,255,.7)\', color: night ? \'#fff\' : \'var(--ink)\' }">🎨 今日海面情绪 · {{ moodLabel }}</span>\
+      </div>\
+      <div class="cta-row">\
+        <button class="cta cta-throw" @click="go(\'throw\')"><span v-html="ic(\'plus\', \'ic-l\')"></span>抛一个瓶子</button>\
+        <button class="cta cta-catch" @click="go(\'catch\')"><span v-html="ic(\'bottle\', \'ic-l\')"></span>捞一个瓶子<span v-if="ocean.drifting.length" class="count">{{ ocean.drifting.length }}</span></button>\
+      </div>\
+    </div>\
+  </OceanScene>\
+  <div class="below">\
+    <div class="panel card-soft" style="background:var(--cream)">\
+      <div class="panel-head"><h2 class="panel-title">今日心情天气</h2><span class="panel-sub">数据只存在你的浏览器里</span></div>\
+      <p class="body">{{ weather }}</p>\
+    </div>\
+    <div class="panel card-soft quote-panel">\
+      <span class="quote-mark" aria-hidden="true">”</span>\
+      <p class="quote-text" :key="quoteIdx"><span class="anim-fade-up" style="display:inline-block">{{ quote }}</span></p>\
+      <p class="quote-by">—— 海边的话 · 每 6 秒换一句</p>\
+    </div>\
+    <button class="panel card-soft energy-card" @click="go(\'space\')">\
+      <span class="energy-left"><span class="energy-ico"><span v-html="ic(\'sparkle\', \'ic-l\')"></span></span>\
+      <span><span class="energy-name">{{ nickname }} · {{ energyT }}</span><span class="energy-sub" style="display:block">心灵能量 {{ energy }} · 去「我的空间」看勋章与周报</span></span></span>\
+      <span style="color:var(--sea-500);font-size:20px">›</span>\
+    </button>\
+  </div>\
+</div>'
+};
+
+/* ---------------- 视图：抛瓶子 ---------------- */
+var ThrowView = {
+  components: { CareAlert: CareAlert },
+  emits: ["open-toolbox"],
+  setup: function (props, ctx) {
+    var content = ref(""), mood = ref(null), wantsReply = ref(true), future = ref(false);
+    var capDays = ref(7), customDate = ref(""), target = ref("ocean");
+    var phase = ref("edit"), care = ref(null), shake = ref(false), doneMsg = ref("");
+    var danger = computed(function () { return isCrisisText(content.value); });
+    var tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    var warmth = computed(function () { return warmthScore(content.value); });
+    function doSend() {
+      phase.value = "sending";
+      setTimeout(function () {
+        var sealedUntil = null;
+        if (future.value) {
+          if (capDays.value === "custom") sealedUntil = customDate.value ? new Date(customDate.value + "T08:00:00").toISOString() : null;
+          else sealedUntil = futureIso(capDays.value);
+        }
+        createBottle({ content: content.value.trim(), mood: mood.value || "other", wantsReply: wantsReply.value, target: future.value ? target.value : "ocean", sealedUntil: sealedUntil });
+        doneMsg.value = sealedUntil
+          ? (target.value === "self" ? "这封信被时间好好收着，到了那一天，会在「我的空间」悄悄打开。" : "这是一只未来的瓶子，时间到了，它才会漂进海里被别人捞起。")
+          : (wantsReply.value ? "瓶子已经出发。有人回信时，你会在「我的空间」收到提醒。" : "瓶子已经出发，正随着海浪漂向某个需要它的人。");
+        phase.value = "done";
+        refreshUser();
+      }, 900);
+    }
+    function submit() {
+      var t = content.value.trim();
+      if (t.length < 4) { shake.value = true; setTimeout(function () { shake.value = false; }, 500); toast("warn", "再多写几个字吧，海才能听见你"); return; }
+      var risk = checkRisk(t);
+      if (risk.level === "crisis") { ctx.emit("open-toolbox", "我们注意到瓶子里有很沉重的心事，先照顾一下自己好吗？"); return; }
+      if (risk.level === "hard") { care.value = { tone: "hard", matched: risk.matched, rewrite: null }; return; }
+      if (risk.level === "implicit") { care.value = { tone: "implicit", matched: risk.matched, rewrite: risk.rewrite }; return; }
+      doSend();
+    }
+    function reset() { content.value = ""; mood.value = null; future.value = false; phase.value = "edit"; }
+    function onContent(e) { content.value = e.target.value.slice(0, 300); }
+    return {
+      content: content, mood: mood, wantsReply: wantsReply, future: future, capDays: capDays, customDate: customDate, target: target,
+      phase: phase, care: care, shake: shake, doneMsg: doneMsg, danger: danger, tomorrow: tomorrow, warmth: warmth,
+      moods: MOOD_LIST, submit: submit, reset: reset, onContent: onContent,
+      energyThrow: ENERGY_RULES.throw, glassBottleSvg: glassBottleSvg, ic: ic, spinner: spinner, go: go,
+      openToolbox: function (r) { ctx.emit("open-toolbox", r); }
+    };
+  },
+  template: '\
+<div v-if="phase === \'done\'" class="done-wrap anim-fade-up">\
+  <div class="done-bottle anim-bob" v-html="glassBottleSvg()" style="filter:drop-shadow(0 16px 28px rgba(70,100,170,.3))"></div>\
+  <h2 class="done-title">漂流瓶已出发 🌊</h2>\
+  <p class="done-msg">{{ doneMsg }}</p>\
+  <p class="done-energy">✨ 获得 {{ energyThrow }} 点心灵能量</p>\
+  <div class="done-actions">\
+    <button class="btn btn-ghost" @click="reset">再写一个</button>\
+    <button class="btn btn-sea" @click="go(\'catch\')">去捞一个瓶子</button>\
+    <button class="link-quiet" @click="go(\'home\')">回首页</button>\
+  </div>\
+</div>\
+<div v-else class="wrap anim-fade-up">\
+  <header style="margin-bottom:16px">\
+    <h1 class="font-display" style="font-size:24px;color:var(--ink-deep)">抛一个瓶子</h1>\
+    <p style="margin-top:4px;font-size:13px;color:var(--ink-soft)">匿名写下心事，让海替你保管。没有人知道这是谁写的。</p>\
+  </header>\
+  <div class="card card-soft">\
+    <div :class="{ \'anim-shake\': shake }">\
+      <label for="throw-content" class="field-label">心事内容</label>\
+      <textarea id="throw-content" class="textarea" rows="6" :value="content" @input="onContent" placeholder="最近有什么压在心头的事？学习、考试、朋友、家人，或者只是说不出的闷……写下来吧。"></textarea>\
+      <div class="char-count">{{ content.length }}/300</div>\
+    </div>\
+    <div v-if="danger" class="danger-note anim-fade-up">\
+      <p><b style="font-weight:500">这些字看起来真的很重。</b><br/>写出来是勇敢的一步。如果需要，工具箱里有呼吸练习和 24 小时热线。</p>\
+      <button class="btn btn-coral" style="padding:6px 12px;font-size:12px;flex:none" @click="openToolbox(\'我们注意到你写下了很沉重的心事。\')"><span v-html="ic(\'wind\', \'ic-s\')"></span>急救工具箱</button>\
+    </div>\
+    <div style="margin-top:16px">\
+      <p class="section-label">情绪标签</p>\
+      <div class="chips" role="group" aria-label="情绪标签">\
+        <button v-for="m in moods" :key="m[0]" class="chip" :class="[\'chip-\' + m[0], { sel: mood === m[0] }]" :style="mood === m[0] ? {} : { opacity: .75 }" :aria-pressed="mood === m[0]" @click="mood = (mood === m[0] ? null : m[0])"><span class="dot" :style="{ background: m[1].dot }"></span>{{ m[1].label }}</button>\
+      </div>\
+    </div>\
+    <div class="switch-row" style="margin-top:20px">\
+      <span><span class="t">希望收到回信</span><span class="d" style="display:block">有人回复时，你会在「我的空间」收到匿名提醒</span></span>\
+      <button class="switch" :class="{ on: wantsReply }" role="switch" :aria-checked="wantsReply" aria-label="希望收到回信" @click="wantsReply = !wantsReply"><span class="knob"></span></button>\
+    </div>\
+    <div class="capsule-box">\
+      <div class="capsule-top">\
+        <span class="capsule-title"><span v-html="ic(\'clock\', \'ic-m\')"></span>时间胶囊 · 写给未来</span>\
+        <button class="switch" :class="{ on: future }" role="switch" :aria-checked="future" aria-label="时间胶囊模式" @click="future = !future"><span class="knob"></span></button>\
+      </div>\
+      <div v-if="future" class="anim-fade-up" style="margin-top:12px;display:flex;flex-direction:column;gap:12px">\
+        <div class="chips" role="group" aria-label="开启时间">\
+          <button v-for="o in [{v:7,label:\'1 周后\'},{v:30,label:\'1 个月后\'},{v:90,label:\'下学期\'},{v:\'custom\',label:\'自定义\'}]" :key="o.v" class="pill pill-dusk" :class="{ sel: capDays === o.v }" :aria-pressed="capDays === o.v" @click="capDays = o.v">{{ o.label }}</button>\
+        </div>\
+        <input v-if="capDays === \'custom\'" type="date" class="date-input" :min="tomorrow" v-model="customDate" aria-label="自定义开启日期" />\
+        <div class="chips" role="group" aria-label="胶囊去向">\
+          <button class="pill pill-sea" :class="{ sel: target === \'ocean\' }" :aria-pressed="target === \'ocean\'" @click="target = \'ocean\'">时间到了，漂给陌生人</button>\
+          <button class="pill pill-sea" :class="{ sel: target === \'self\' }" :aria-pressed="target === \'self\'" @click="target = \'self\'">留给未来的自己</button>\
+        </div>\
+        <p style="font-size:11px;line-height:1.6;color:var(--ink-soft)">开启之前，这封信会被时间封存，谁也捞不到——包括你自己。</p>\
+      </div>\
+    </div>\
+    <button class="submit-big" :disabled="phase === \'sending\'" @click="submit">\
+      <template v-if="phase === \'sending\'"><span v-html="spinner(\'ic-m\')"></span> 瓶子正在装好信纸…</template>\
+      <template v-else><span v-html="ic(\'send\', \'ic-m\')"></span>{{ future ? "封存进时间胶囊" : "匿名抛进大海" }}</template>\
+    </button>\
+    <p class="form-hint">发送前会经过温暖守门员检测 · 攻击性语言会被温柔拦下</p>\
+  </div>\
+  <CareAlert v-if="care" :tone="care.tone" :matched="care.matched" :rewrite="care.rewrite" @close="care = null" @use-rewrite="(t) => { content = t; care = null; }" />\
+</div>'
+};
+
+/* ---------------- 视图：捞瓶子 ---------------- */
+var CatchView = {
+  props: { initialBottleId: String },
+  components: { CareAlert: CareAlert },
+  emits: ["open-toolbox"],
+  setup: function (props, ctx) {
+    var phase = ref("fetching"), bottle = ref(null), replies = ref([]);
+    var composer = ref(""), chosenStyle = ref(null), aiOpen = ref(false), aiLoading = ref(false), aiReplies = ref(null);
+    var sending = ref(false), care = ref(null), reportTarget = ref(null), hearts = reactive({}), shake = ref(false);
+    var usedInitial = false;
+    function fetchOne(excludeId) {
+      phase.value = "fetching"; composer.value = ""; chosenStyle.value = null; aiOpen.value = false; aiReplies.value = null;
+      setTimeout(function () {
+        var b = (!usedInitial && props.initialBottleId) ? (getBottle(props.initialBottleId) || null) : catchRandom(excludeId);
+        usedInitial = true;
+        if (!b) { bottle.value = null; phase.value = "empty"; return; }
+        dbAddEnergy(ENERGY_RULES.catch); refreshUser();
+        bottle.value = b; replies.value = listReplies(b.id); phase.value = "letter";
+      }, 850);
+    }
+    onMounted(function () { fetchOne(); });
+    var warmth = computed(function () { return warmthScore(composer.value); });
+    var isMine = computed(function () { return bottle.value && store.user && bottle.value.authorId === store.user.id; });
+    var hugged = computed(function () { return bottle.value && store.user && bottle.value.huggedBy.indexOf(store.user.id) >= 0; });
+    var moodMeta = computed(function () { return bottle.value ? MOODS[bottle.value.mood] : null; });
+    function submitReply() {
+      if (!bottle.value) return;
+      var t = composer.value.trim();
+      if (t.length < 2) { shake.value = true; setTimeout(function () { shake.value = false; }, 500); toast("warn", "写一句想对 TA 说的话吧"); return; }
+      var risk = checkRisk(t);
+      if (risk.level === "crisis") { ctx.emit("open-toolbox", "回复里出现了很沉重的词，先照顾一下自己好吗？"); return; }
+      if (risk.level === "hard") { care.value = { tone: "hard", matched: risk.matched, rewrite: null }; return; }
+      if (risk.level === "implicit") { care.value = { tone: "implicit", matched: risk.matched, rewrite: risk.rewrite }; return; }
+      sending.value = true;
+      setTimeout(function () {
+        addReply(bottle.value.id, t, chosenStyle.value);
+        replies.value = listReplies(bottle.value.id);
+        composer.value = ""; chosenStyle.value = null; sending.value = false;
+        refreshUser();
+        toast("ok", "温暖已送达 · +" + ENERGY_RULES.reply + " 能量 ✨");
+      }, 650);
+    }
+    function openAi() {
+      if (!bottle.value) return;
+      aiOpen.value = true;
+      if (aiReplies.value) return;
+      aiLoading.value = true;
+      suggestReplies(bottle.value.content, bottle.value.mood).then(function (r) { aiReplies.value = r; aiLoading.value = false; });
+    }
+    function pickStyle(s) { composer.value = aiReplies.value[s]; chosenStyle.value = s; toast("ok", "已选择「" + REPLY_STYLES[s].label + "」风格，可以修改后再发送"); }
+    function like(r) {
+      if (!bottle.value) return;
+      var res = toggleReplyLike(r.id);
+      replies.value = listReplies(bottle.value.id); refreshUser();
+      if (res.liked) {
+        var batch = [];
+        for (var k = 0; k < 6; k++) batch.push({ id: Date.now() + k + Math.floor(Math.random() * 999), x: Math.random() * 44 - 22, delay: Math.random() * 0.35, size: 12 + Math.random() * 10, hue: Math.random() > 0.5 ? "rose" : "warm" });
+        hearts[r.id] = (hearts[r.id] || []).concat(batch);
+        setTimeout(function () {
+          hearts[r.id] = (hearts[r.id] || []).filter(function (x) { return !batch.some(function (b) { return b.id === x.id; }); });
+        }, 1900);
+      }
+    }
+    function hug() {
+      if (!bottle.value) return;
+      var res = toggleHug(bottle.value.id);
+      bottle.value = Object.assign({}, res.bottle);
+      toast("ok", res.hugged ? "已给 TA 一个拥抱 🤗" : "收回了一个拥抱");
+    }
+    function confirmReport() {
+      if (!reportTarget.value || !bottle.value) return;
+      reportReply(reportTarget.value.id);
+      replies.value = listReplies(bottle.value.id);
+      reportTarget.value = null;
+      toast("warn", "已收到举报，谢谢你守护这片海");
+    }
+    function warm(r) { return isWarmReply(r); }
+    function liked(r) { return store.user && r.likedBy.indexOf(store.user.id) >= 0; }
+    function reported(r) { return store.user && r.reportedBy.indexOf(store.user.id) >= 0; }
+    return {
+      phase: phase, bottle: bottle, replies: replies, composer: composer, chosenStyle: chosenStyle, aiOpen: aiOpen, aiLoading: aiLoading, aiReplies: aiReplies,
+      sending: sending, care: care, reportTarget: reportTarget, hearts: hearts, shake: shake,
+      warmth: warmth, isMine: isMine, hugged: hugged, moodMeta: moodMeta,
+      fetchOne: fetchOne, submitReply: submitReply, openAi: openAi, pickStyle: pickStyle, like: like, hug: hug, confirmReport: confirmReport,
+      warm: warm, liked: liked, reported: reported,
+      styles: REPLY_STYLES, styleKeys: STYLE_KEYS, timeAgo: timeAgo, glassBottleSvg: glassBottleSvg, miniBottleSvg: miniBottleSvg, ic: ic, spinner: spinner, go: go,
+      reportOpen: ref(false)
+    };
+  },
+  template: '\
+<div v-if="phase === \'fetching\'" class="fetching anim-fade-up">\
+  <div class="sea-window"><div class="bottle anim-rise" v-html="glassBottleSvg()" style="filter:drop-shadow(0 16px 30px rgba(15,40,90,.35))"></div><div class="shade"></div></div>\
+  <p class="t">正在打捞漂流瓶…</p>\
+  <p class="s"><span v-html="spinner(\'ic-m\')" style="color:var(--sea-500)"></span>海浪正把它送到你手边</p>\
+</div>\
+<div v-else-if="phase === \'empty\' || !bottle" class="wrap anim-fade-up">\
+  <div class="empty">\
+    <span class="ico"><span v-html="ic(\'bottle\', \'ic-xl\')"></span></span>\
+    <p class="t">海面还很安静</p>\
+    <p class="d">现在海里还没有可以打捞的漂流瓶。不如由你写下第一份心事，让这片海醒过来？</p>\
+    <span class="act"><button class="btn btn-coral" @click="go(\'throw\')">去抛第一个瓶子</button></span>\
+  </div>\
+</div>\
+<div v-else class="wrap anim-fade-up">\
+  <header class="catch-head">\
+    <div><h1 class="catch-title">捞到一个瓶子</h1><p class="catch-sub">来自一位匿名的心事主人 · {{ timeAgo(bottle.createdAt) }}</p></div>\
+    <button class="btn btn-ghost" style="padding:8px 16px;font-size:12px" @click="fetchOne(bottle.id)"><span v-html="ic(\'refresh\', \'ic-s\')"></span>换一个</button>\
+  </header>\
+  <div class="letter-card card-soft">\
+    <div class="letter-top">\
+      <span class="letter-author"><span v-html="miniBottleSvg(bottle.skin)" style="width:24px"></span>匿名漂流者</span>\
+      <span class="meta-chip" :class="\'chip-\' + bottle.mood"><span class="dot" :style="{ background: moodMeta.dot }"></span>{{ moodMeta.label }}</span>\
+    </div>\
+    <div class="letter-body">\
+      <p class="letter-content">{{ bottle.content }}</p>\
+      <button v-if="!isMine" class="hug-btn" :class="{ on: hugged }" :aria-pressed="hugged" @click="hug()"><span v-html="ic(\'heartFilled\', \'ic-s\')"></span>抱抱 TA · {{ bottle.hugs }}</button>\
+    </div>\
+  </div>\
+  <div class="reply-box card-soft">\
+    <div class="reply-head"><span class="lbl">写一句温暖的话给 TA</span><button class="btn-ai btn" @click="openAi"><span v-html="ic(\'sparkle\', \'ic-s\')"></span>AI 推荐安慰话术</button></div>\
+    <div v-if="aiOpen" class="ai-cards anim-fade-up">\
+      <template v-if="aiLoading"><div v-for="i in 3" :key="i" class="shimmer" style="height:64px;border-radius:16px" aria-hidden="true"></div></template>\
+      <template v-else-if="aiReplies">\
+        <button v-for="s in styleKeys" :key="s" class="ai-card" :class="{ sel: chosenStyle === s }" @click="pickStyle(s)">\
+          <span class="meta-chip" :class="styles[s].chip" style="padding:2px 8px;font-size:10px">{{ styles[s].label }}</span>\
+          <span class="txt">{{ aiReplies[s] }}</span>\
+        </button>\
+        <p class="ai-hint">AI 话术仅供参考，避免说教、指责与过度承诺 · 点选后可编辑</p>\
+      </template>\
+    </div>\
+    <div :class="{ \'anim-shake\': shake }" style="margin-top:12px">\
+      <textarea id="reply-content" class="textarea" rows="3" v-model="composer" maxlength="200" aria-label="回复内容" :placeholder="chosenStyle ? (\'已选择「\' + styles[chosenStyle].label + \'」，改成你自己的语气吧…\') : \'比如：我看到你了，慢慢来，我在。\'"></textarea>\
+      <div class="meter"><span class="lbl">语气温度</span><span class="bar"><span class="fill" :style="{ width: warmth.score + \'%\', background: warmth.tone === \'cool\' ? \'linear-gradient(90deg, #8cb8e6aa, #8cb8e6)\' : warmth.tone === \'mid\' ? \'linear-gradient(90deg, #eebb62aa, #eebb62)\' : \'linear-gradient(90deg, #f09f7daa, #f09f7d)\' }"></span></span><span class="val" :style="{ color: warmth.tone === \'cool\' ? \'#8cb8e6\' : warmth.tone === \'mid\' ? \'#eebb62\' : \'#f09f7d\' }">{{ warmth.label }}</span></div>\
+    </div>\
+    <div class="reply-actions"><span class="hint">发送前由温暖守门员守护语气</span>\
+      <button class="btn btn-sea" :disabled="sending" @click="submitReply"><span v-if="sending" v-html="spinner(\'ic-m\')"></span><span v-else v-html="ic(\'send\', \'ic-m\')"></span>送出温暖</button>\
+    </div>\
+  </div>\
+  <div v-if="replies.length">\
+    <p class="replies-head"><span v-html="ic(\'heartFilled\', \'ic-s\')" style="color:var(--blush-400)"></span>{{ replies.length }} 条回复 · 点赞最高的将被标记为「温暖回复」</p>\
+    <div v-for="(r, idx) in replies" :key="r.id" class="reply-item card-soft" :class="{ warm: warm(r) }">\
+      <span v-if="warm(r)" class="warm-badge"><span v-html="ic(\'sparkle\', \'ic-s\')"></span>温暖回复</span>\
+      <template v-if="r.reports >= 3"><p class="folded">该回复因多次举报已被折叠 🍂</p></template>\
+      <template v-else>\
+        <div class="reply-meta">\
+          <span v-if="r.style" class="meta-chip" :class="styles[r.style].chip" style="padding:2px 8px;font-size:10px">{{ styles[r.style].label }}</span>\
+          <span class="who">匿名温暖的人 · {{ timeAgo(r.createdAt) }}</span>\
+          <span v-if="idx === 0 && r.likes > 0" class="top">🏆 最暖</span>\
+        </div>\
+        <p class="reply-content">{{ r.content }}</p>\
+      </template>\
+      <div class="reply-foot">\
+        <button class="report-btn" :disabled="reported(r) || r.reports >= 3" aria-label="举报这条回复" @click="reportTarget = r; reportOpen = true"><span v-html="ic(\'flag\', \'ic-s\')"></span>{{ reported(r) ? "已举报" : "举报" }}</button>\
+        <div style="position:relative">\
+          <span class="hearts"><svg v-for="h in (hearts[r.id] || [])" :key="h.id" viewBox="0 0 24 24" class="heart-float" :style="{ position:\'absolute\', bottom:\'100%\', left:\'50%\', marginLeft: h.x + \'px\', width: h.size + \'px\', animationDelay: h.delay + \'s\', color: h.hue === \'rose\' ? \'#ea9cb2\' : \'#f09f7d\' }" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z" fill="currentColor"/></svg></span>\
+          <button class="like-btn" :class="{ on: liked(r) }" :disabled="r.reports >= 3" :aria-pressed="liked(r)" aria-label="感到温暖，点赞" @click="like(r)"><span v-html="ic(liked(r) ? \'heartFilled\' : \'heart\', \'ic-s\')"></span>感到温暖 · {{ r.likes }}</button>\
+        </div>\
+      </div>\
+    </div>\
+  </div>\
+  <CareAlert v-if="care" :tone="care.tone" :matched="care.matched" :rewrite="care.rewrite" @close="care = null" @use-rewrite="(t) => { composer = t; care = null; }" />\
+  <div v-if="reportOpen && reportTarget" class="overlay">\
+    <button class="bg anim-backdrop-in" aria-label="关闭" @click="reportOpen = false; reportTarget = null"></button>\
+    <div class="dialog anim-modal-in" role="dialog" aria-modal="true" aria-label="确认举报" style="max-width:440px">\
+      <div style="padding:24px">\
+        <h3 class="font-display" style="font-size:18px;color:var(--ink-deep)">举报这条回复？</h3>\
+        <p style="margin-top:8px;font-size:13px;line-height:1.7;color:var(--ink-soft)">如果这条回复包含攻击、嘲讽或让人不适的内容，请告诉我们。累计 3 次举报后，它会被折叠，不再展示给其他人。</p>\
+        <div style="margin-top:20px;display:flex;gap:10px">\
+          <button class="btn btn-ghost" style="flex:1;justify-content:center" @click="reportOpen = false; reportTarget = null">再想想</button>\
+          <button class="btn" style="flex:1;justify-content:center;background:var(--rose-400);color:#fff" @click="confirmReport(); reportOpen = false">确认举报</button>\
+        </div>\
+      </div>\
+    </div>\
+  </div>\
+</div>'
+};
+
+/* ---------------- 视图：我的空间 ---------------- */
+var SpaceView = {
+  emits: ["open-bottle"],
+  setup: function (props, ctx) {
+    var tab = ref("bottles"), weekOpen = ref(false), tick = ref(0);
+    function bump() { tick.value++; refreshUser(); }
+    var stats = computed(function () { void tick.value; return lifetimeStats(); });
+    var myBottles = computed(function () { void tick.value; return listMine(); });
+    var myReplies = computed(function () { void tick.value; return listMyReplies(); });
+    var notices = computed(function () { void tick.value; return listNotices(); });
+    var unread = computed(function () { return notices.value.filter(function (n) { return !n.read; }).length; });
+    var user = computed(function () { return store.user || {}; });
+    var frameClass = computed(function () { return user.value.frame === "frame-sea" ? "frame-sea" : user.value.frame === "frame-gold" ? "frame-gold" : ""; });
+    function replyCount(b) { return listReplies(b.id).length; }
+    function unlock(id, cost) {
+      if (dbSpendEnergy(cost)) { dbUpdateMe({ unlocked: dbMe().unlocked.concat([id]) }); toast("ok", "解锁成功 ✨ 去看看你的新装扮"); bump(); }
+      else toast("warn", "心灵能量不够啦，去多送点温暖吧");
+    }
+    function equip(type, id) {
+      if (type === "theme") { dbUpdateMe({ theme: id.replace("theme-", "") }); toast("ok", "主题已更换，听听海浪的新颜色"); }
+      else { var p = {}; p[type] = id; dbUpdateMe(p); toast("ok", "装扮已穿上"); }
+      bump();
+    }
+    function owned(u) { return user.value.unlocked.indexOf(u.id) >= 0; }
+    function equipped(u) {
+      return (u.type === "skin" && user.value.skin === u.id) || (u.type === "frame" && user.value.frame === u.id) || (u.type === "theme" && ("theme-" + user.value.theme) === u.id);
+    }
+    function noticeText(kind) { return kind === "reply" ? "有人回信了你的漂流瓶 💌" : kind === "like" ? "你的回复被人点亮了 ❤️" : "你的时间胶囊开启了 ⏳"; }
+    function reroll() { dbRerollName(); toast("ok", "换了个新身份，海还是那片海"); bump(); }
+    function markRead() { markAllRead(); bump(); }
+    function badgeGot(bd) { return bd.earned(stats.value); }
+    return {
+      tab: tab, weekOpen: weekOpen, stats: stats, myBottles: myBottles, myReplies: myReplies, notices: notices, unread: unread,
+      user: user, frameClass: frameClass, replyCount: replyCount, unlock: unlock, equip: equip, owned: owned, equipped: equipped,
+      noticeText: noticeText, reroll: reroll, markRead: markRead, badgeGot: badgeGot,
+      badges: BADGES, unlocks: UNLOCKS, moods: MOODS, energyTitle: energyTitle, isUnsealed: isUnsealed, countdownLabel: countdownLabel,
+      timeAgo: timeAgo, glassBottleSvg: glassBottleSvg, miniBottleSvg: miniBottleSvg, ic: ic, go: go, isWarmReply: isWarmReply,
+      openBottle: function (id) { ctx.emit("open-bottle", id); }
+    };
+  },
+  template: '\
+<div class="wrap-wide anim-fade-up">\
+  <div class="id-card card-soft">\
+    <span class="blob" aria-hidden="true"></span>\
+    <div class="id-inner">\
+      <div class="avatar" :class="frameClass" :style="{ background: user.avatarHue }">{{ user.nickname ? user.nickname.slice(0,1) : "" }}</div>\
+      <div style="min-width:0;flex:1">\
+        <div class="id-name"><h1>{{ user.nickname }}</h1><button class="reroll" aria-label="换一个匿名身份" @click="reroll" v-html="ic(\'refresh\', \'ic-s\')"></button></div>\
+        <p class="id-sub">匿名身份 · {{ energyTitle(user.energy || 0) }} · 连续 {{ stats.streak }} 天看海</p>\
+        <div class="id-tags">\
+          <span class="tag-energy"><span v-html="ic(\'sparkle\', \'ic-s\')"></span>心灵能量 {{ user.energy }}</span>\
+          <button class="tag-week" @click="weekOpen = true"><span v-html="ic(\'gift\', \'ic-s\')"></span>心灵周报</button>\
+        </div>\
+      </div>\
+    </div>\
+  </div>\
+  <div v-if="unread > 0" class="notice-card card-soft">\
+    <div class="notice-head">\
+      <p class="notice-title"><span class="notice-dot"><span class="p anim-pulse-ring"></span><span class="p"></span></span>有 {{ unread }} 条新的回音</p>\
+      <button class="link-quiet" style="font-size:11px" @click="markRead">全部已读</button>\
+    </div>\
+    <button v-for="n in notices.filter(function(x){return !x.read;}).slice(0,3)" :key="n.id" class="notice-item" @click="openBottle(n.bottleId)"><span>{{ noticeText(n.kind) }}</span><span class="t">{{ timeAgo(n.createdAt) }}</span></button>\
+  </div>\
+  <div class="tabs" role="tablist" aria-label="我的空间">\
+    <button v-for="t in [{id:\'bottles\',label:\'我的瓶子 \' + myBottles.length},{id:\'replies\',label:\'我的回复 \' + myReplies.length},{id:\'growth\',label:\'成长与解锁\'}]" :key="t.id" role="tab" class="tab" :class="tab === t.id ? \'on\' : \'off\'" :aria-selected="tab === t.id" @click="tab = t.id">{{ t.label }}</button>\
+  </div>\
+  <div class="tab-content">\
+    <template v-if="tab === \'bottles\'">\
+      <div v-if="!myBottles.length" class="empty"><span class="ico"><span v-html="ic(\'bottle\', \'ic-xl\')"></span></span><p class="t">还没有抛出过瓶子</p><p class="d">把第一份心事交给海吧，也许某个晚上，它就会被人温柔地捞起。</p><span class="act"><button class="btn btn-coral" @click="go(\'throw\')">去抛一个瓶子</button></span></div>\
+      <div v-else>\
+        <div v-for="b in myBottles" :key="b.id" class="item-card card-soft">\
+          <div class="item-meta">\
+            <span v-html="miniBottleSvg(b.skin)" style="width:20px"></span>\
+            <span class="meta-chip" :class="\'chip-\' + b.mood">{{ moods[b.mood].label }}</span>\
+            <span v-if="!isUnsealed(b)" class="meta-chip" style="background:var(--dusk-100);color:var(--dusk-500)"><span v-html="ic(\'clock\', \'ic-s\')"></span>{{ countdownLabel(b.sealedUntil) }} · {{ b.target === \'self\' ? \'给未来的自己\' : \'时间胶囊\' }}</span>\
+            <span v-if="b.wantsReply && replyCount(b) > 0 && isUnsealed(b)" class="meta-chip" style="background:var(--blush-100);color:var(--blush-500)">有 {{ replyCount(b) }} 封回信 💌</span>\
+            <span class="time">{{ timeAgo(b.createdAt) }}</span>\
+          </div>\
+          <p class="item-content">{{ b.content }}</p>\
+          <p class="item-stats">🤗 {{ b.hugs }} 个拥抱 · 💬 {{ replyCount(b) }} 条回复</p>\
+        </div>\
+      </div>\
+    </template>\
+    <template v-else-if="tab === \'replies\'">\
+      <div v-if="!myReplies.length" class="empty"><span class="ico"><span v-html="ic(\'heartFilled\', \'ic-xl\')"></span></span><p class="t">还没有送出过温暖</p><p class="d">去捞一个瓶子，写下第一句安慰的话。被标记为「温暖回复」的话，会获得勋章进度哦。</p></div>\
+      <div v-else>\
+        <div v-for="r in myReplies" :key="r.id" class="item-card card-soft">\
+          <div class="item-meta">\
+            <span v-if="isWarmReply(r)" class="meta-chip" style="background:var(--gold-400);color:#fff"><span v-html="ic(\'star\', \'ic-s\')"></span>温暖回复</span>\
+            <span class="meta-chip" style="background:var(--sea-50);color:var(--sea-600)">❤️ 被点亮 {{ r.likes }} 次</span>\
+            <span class="time">{{ timeAgo(r.createdAt) }}</span>\
+          </div>\
+          <p style="margin-top:8px;font-size:14px;line-height:1.7;color:var(--ink)">{{ r.content }}</p>\
+        </div>\
+      </div>\
+    </template>\
+    <template v-else>\
+      <div style="margin-bottom:20px">\
+        <h2 class="font-display" style="font-size:16px;color:var(--ink-deep);margin-bottom:10px">心灵守护者勋章</h2>\
+        <div class="badge-grid">\
+          <div v-for="bd in badges" :key="bd.id" class="badge-card card-soft" :class="badgeGot(bd) ? \'got\' : \'lock\'">\
+            <div class="badge-ico"><span v-html="ic(badgeGot(bd) ? bd.icon : \'lock\', \'ic-l\')"></span></div>\
+            <p class="badge-name">{{ bd.name }}</p>\
+            <p class="badge-desc">{{ bd.desc }}</p>\
+            <span v-if="badgeGot(bd)" class="badge-medal">🏅</span>\
+          </div>\
+        </div>\
+      </div>\
+      <div>\
+        <h2 class="font-display" style="font-size:16px;color:var(--ink-deep)">能量兑换所</h2>\
+        <p class="shop-desc" style="margin-top:4px">每次抛瓶、捞瓶、回复、点赞都会积攒心灵能量，用来解锁瓶子皮肤、头像框和海面主题。</p>\
+        <div v-for="u in unlocks" :key="u.id" class="shop-item card-soft">\
+          <div style="min-width:0"><p class="shop-name">{{ u.name }}<span class="shop-type">{{ u.type === \'skin\' ? \'瓶子皮肤\' : u.type === \'frame\' ? \'头像框\' : \'海面主题\' }}</span></p><p class="shop-desc2">{{ u.desc }}</p></div>\
+          <span v-if="equipped(u)" class="shop-using">使用中</span>\
+          <button v-else-if="owned(u)" class="shop-equip" @click="equip(u.type, u.id)">穿上</button>\
+          <button v-else class="shop-buy" @click="unlock(u.id, u.cost)"><span v-html="ic(\'sparkle\', \'ic-s\')"></span>{{ u.cost }} 能量</button>\
+        </div>\
+      </div>\
+    </template>\
+  </div>\
+  <WeeklyModal v-if="weekOpen" @close="weekOpen = false" />\
+</div>'
+};
+
+/* ---------------- 组件：心灵周报 ---------------- */
+var WeeklyModal = {
+  emits: ["close"],
+  setup: function (props, ctx) {
+    var ready = ref(false);
+    var stats = weeklyStats();
+    var quote = weeklyQuote(stats);
+    var t = setTimeout(function () { ready.value = true; }, 1100);
+    var moodEntries = MOOD_LIST.filter(function (m) { return (stats.moodCounts[m[0]] || 0) > 0; });
+    var maxCount = Math.max.apply(null, [1].concat(moodEntries.map(function (m) { return stats.moodCounts[m[0]] || 0; })));
+    onMounted(function () {
+      var onKey = function (e) { if (e.key === "Escape") ctx.emit("close"); };
+      window.addEventListener("keydown", onKey); window._weekKey = onKey;
+    });
+    return { ready: ready, stats: stats, quote: quote, moodEntries: moodEntries, maxCount: maxCount, moods: MOODS, fmtDate: fmtDate, nowIso: nowIso, ic: ic, spinner: spinner,
+      barWidth: function (id) { return ((stats.moodCounts[id] || 0) / maxCount) * 100 + "%"; } };
+  },
+  unmounted: function () { if (window._weekKey) { window.removeEventListener("keydown", window._weekKey); window._weekKey = null; } },
+  template: '\
+<div class="overlay">\
+  <button class="bg anim-backdrop-in" aria-label="关闭" @click="$emit(\'close\')"></button>\
+  <div class="dialog wide anim-modal-in" role="dialog" aria-modal="true" aria-label="每周心灵周报">\
+    <div class="dialog-head"><div><h3>每周心灵周报</h3><p class="sub">回顾 · {{ fmtDate(nowIso()) }} 这一周</p></div><button class="icon-btn" aria-label="关闭" @click="$emit(\'close\')" v-html="ic(\'close\')"></button></div>\
+    <div v-if="!ready" class="loading-col"><span v-html="spinner(\'ic-xl\')" style="color:var(--sea-500)"></span><p>正在把这一周的心事折成信纸…</p></div>\
+    <div v-else class="dialog-body">\
+      <div class="week-poster anim-fade-up">\
+        <span class="week-emoji" aria-hidden="true">🌊</span>\
+        <p class="week-pre">这一周的你 ——</p>\
+        <div class="week-grid">\
+          <div v-for="s in [{n:stats.thrown,label:\'抛出的瓶子\'},{n:stats.replied,label:\'送出的回复\'},{n:stats.warmLabels,label:\'温暖回复标签\'},{n:stats.likesGiven,label:\'点亮的温暖\'}]" :key="s.label" class="week-stat"><p class="n">{{ s.n }}</p><p class="l">{{ s.label }}</p></div>\
+        </div>\
+        <div v-if="moodEntries.length" class="week-moods">\
+          <p class="t">情绪标签的足迹</p>\
+          <div v-for="m in moodEntries" :key="m[0]" class="mood-bar"><span class="name">{{ m[1].label }}</span><span class="track"><span class="fill" :style="{ width: barWidth(m[0]) }"></span></span><span class="num">{{ stats.moodCounts[m[0]] || 0 }}</span></div>\
+        </div>\
+        <div class="week-quote"><p class="lbl"><span v-html="ic(\'sparkle\', \'ic-s\')"></span>AI 为你写的一句话</p><p>{{ quote }}</p></div>\
+        <p class="week-foot">心灵漂流瓶 · 给正在变好的你 · 活跃 {{ stats.daysActive }} 天</p>\
+      </div>\
+    </div>\
+  </div>\
+</div>'
+};
+
+/* ---------------- 根应用 ---------------- */
+var App = {
+  components: { HomeView: HomeView, ThrowView: ThrowView, CatchView: CatchView, SpaceView: SpaceView, ToolboxModal: ToolboxModal },
+  setup: function () {
+    store.user = Object.assign({}, dbBoot());
+    store.unread = unreadCount();
+    var NAV = [ { id: "home", label: "首页", icon: "home" }, { id: "throw", label: "抛瓶", icon: "plus" }, { id: "catch", label: "捞瓶", icon: "bottle" }, { id: "space", label: "我的", icon: "user" } ];
+    var themeClass = computed(function () { return "theme-" + (store.user ? store.user.theme : "dawn"); });
+    var bgStyle = computed(function () { return { background: "linear-gradient(180deg, var(--sky3) 0%, #ebe6d8 360px, #ebe6d8 100%)" }; });
+    function closeToolbox() { store.toolboxOpen = false; store.toolboxReason = null; }
+    return { store: store, NAV: NAV, themeClass: themeClass, bgStyle: bgStyle, go: go, openBottleById: openBottleById, openToolbox: openToolbox, closeToolbox: closeToolbox, ic: ic };
+  },
+  template: '\
+<div :class="themeClass" :style="bgStyle" style="min-height:100vh">\
+  <main class="main">\
+    <HomeView v-if="store.view === \'home\'" />\
+    <ThrowView v-else-if="store.view === \'throw\'" @open-toolbox="openToolbox" />\
+    <CatchView v-else-if="store.view === \'catch\'" :key="store.catchKey" :initial-bottle-id="store.catchInitial" @open-toolbox="openToolbox" />\
+    <SpaceView v-else-if="store.view === \'space\'" @open-bottle="openBottleById" />\
+    <footer class="footer-note">心灵漂流瓶 · 匿名同伴互助演示版<br/>所有数据只保存在你的浏览器本地 · 数据结构已为接入 Supabase 做好准备<br/>若你或身边的人正处于危机中，请拨打 12355 或当地心理援助热线</footer>\
+  </main>\
+  <button class="fab" aria-label="打开急救工具箱：呼吸引导、白噪音与心理热线" @click="openToolbox()"><span class="ring anim-pulse-ring" aria-hidden="true"></span><span style="position:relative" v-html="ic(\'wind\', \'ic-xl\')"></span></button>\
+  <nav class="bottomnav" aria-label="主导航">\
+    <div class="inner">\
+      <button v-for="n in NAV" :key="n.id" class="nav-btn" :class="{ active: store.view === n.id }" :aria-current="store.view === n.id ? \'page\' : undefined" @click="go(n.id)">\
+        <span class="icwrap" v-html="ic(n.icon, \'ic-l\')"></span>{{ n.label }}\
+        <span v-if="n.id === \'space\' && store.unread > 0" class="nav-badge">{{ store.unread }}</span>\
+      </button>\
+    </div>\
+  </nav>\
+  <ToolboxModal v-if="store.toolboxOpen" :reason="store.toolboxReason" @close="closeToolbox" />\
+  <div class="toasts" aria-live="polite"><div v-for="t in store.toasts" :key="t.id" class="toast anim-pop" :class="\'toast-\' + t.type">{{ t.msg }}</div></div>\
+</div>'
+};
+
+var _app = _.createApp(App);
+_app.component("WeeklyModal", WeeklyModal);
+_app.mount("#app");
+</script>
+</body>
 </html>
