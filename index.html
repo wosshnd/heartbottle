@@ -511,14 +511,6 @@ body{line-height:1.6}
 .warmth-count{font-size:12px;color:var(--ink-soft)}
 .warmth-count b{color:var(--blush-500);font-size:15px}
 
-/* 我的足迹 */
-.fab-traces{position:fixed;left:16px;bottom:86px;z-index:70;display:flex;align-items:center;gap:6px;border-radius:999px;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.9);padding:10px 16px;font-size:12px;font-weight:500;color:var(--sea-600);box-shadow:0 8px 22px rgba(61,101,158,.25);transition:transform .18s,box-shadow .2s}
-.fab-traces:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 12px 28px rgba(61,101,158,.35)}
-.fab-traces:active{transform:scale(.94)}
-.traces-item{border-radius:18px;background:var(--cream);padding:14px 16px;margin-bottom:10px;box-shadow:0 4px 14px rgba(49,64,95,.07)}
-.traces-item p{font-size:14px;line-height:1.7;color:var(--ink);margin-top:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.traces-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:10px;color:var(--ink-faint)}
-
 /* 涂鸦画布 */
 .doodle-canvas{width:100%;height:180px;border-radius:16px;border:2px dashed var(--sea-300);background:#fffaf2;touch-action:none;cursor:crosshair;display:block}
 /* 危机干预弹窗 */
@@ -616,6 +608,25 @@ function calcStreak(activeDays) {
 /* ---------------- 安全 · 温暖守门员 ---------------- */
 /* 第一级：本地敏感词库（显性攻击，命中即拦截） */
 var HARD_WORDS = ["傻逼","煞笔","废物","脑残","智障","贱人","贱货","蠢货","白痴","弱智","去死","找死","该死","滚蛋","滚开","打死你","弄死你","弄死","等着瞧","要你好看","恶心死了","垃圾人","畜生","狗东西","贱b","去你妈"];
+/* 拼音首字母缩写库（统一小写存储；检测前会先把输入转小写，SB / Sb 无法绕过） */
+var HARD_ABBRS = ["sb","nmsl","wcnm","wcnmd","cnm","cnmd","nmd","qnmd","tmd","tnnd","rnm","jb","smjb","wc","sjb","mmp","nc","zz","nnd","nmzl"];
+/* 为每个缩写构建「单词边界 + 模糊分隔」正则：
+   · \b 保证 sb 只在作为独立词时命中 —— “你是sb”“sb啊”会被拦，
+     而 somebody / fancy 这类长单词里的字母组合安然无恙
+   · 字母之间允许 [\s._\-~·]* —— “s.b”“s b”“n.m.s.l” 等变体同样命中
+   · i 标志忽略大小写 */
+var ABBR_RULES = HARD_ABBRS.map(function (a) {
+  return { word: a, re: new RegExp("\\b" + a.split("").join("[\\s._\\-~·]*") + "\\b", "i") };
+});
+/* 敏感词检测 v2：中文词走全文子串匹配，拼音缩写走边界正则（对外即 checkSensitiveWords） */
+function checkSensitiveWords(text) {
+  var t = String(text).toLowerCase();
+  var hit = HARD_WORDS.filter(function (w) { return t.indexOf(w) >= 0; });
+  ABBR_RULES.forEach(function (r) {
+    if (r.re.test(t) && hit.indexOf(r.word) < 0) hit.push(r.word);
+  });
+  return hit;
+}
 /* 第三级：危机关键词库（触发即介入关怀，绝不拦截冷漠处理） */
 var CRISIS_WORDS = ["不想活","活不下去","结束生命","了结自己","自杀","轻生","自残","割腕","跳楼","跳下去","活着没意思","没有我会更好","消失算了","再见了世界","遗书","安眠药","解脱"];
 var IMPLICIT_RULES = [
@@ -632,7 +643,7 @@ function checkRisk(text) {
   var t = text.trim();
   var crisis = CRISIS_WORDS.filter(function (w) { return t.indexOf(w) >= 0; });
   if (crisis.length) return { level: "crisis", matched: crisis, rewrite: null };
-  var hard = HARD_WORDS.filter(function (w) { return t.indexOf(w) >= 0; });
+  var hard = checkSensitiveWords(t);   // v2：中文词 + 拼音缩写（边界正则 / 忽略大小写）
   if (hard.length) return { level: "hard", matched: hard, rewrite: null };
   for (var i = 0; i < IMPLICIT_RULES.length; i++) {
     var r = IMPLICIT_RULES[i];
@@ -1330,8 +1341,7 @@ var store = reactive({
   catchInitial: null,
   catchKey: 0,
   unread: 0,
-  cloudMode: "☁️ 正在连接云端…",  // Supabase 连接状态，由 cloudPing() 更新
-  tracesOpen: false               // 「我的足迹」弹窗开关
+  cloudMode: "☁️ 正在连接云端…"   // Supabase 连接状态，由 cloudPing() 更新
 });
 var _toastId = 1;
 function toast(type, msg) {
@@ -2395,45 +2405,6 @@ var WeeklyModal = {
 </div>'
 };
 
-/* ---------------- 我的足迹（localStorage 里我抛过的瓶子） ---------------- */
-var TracesModal = {
-  emits: ["close"],
-  setup: function (props, ctx) {
-    var mine = listMine();
-    function replyCountOf(b) { return listReplies(b.id).length; }
-    onMounted(function () {
-      var onKey = function (e) { if (e.key === "Escape") ctx.emit("close"); };
-      window.addEventListener("keydown", onKey); window._tracesKey = onKey;
-    });
-    return { mine: mine, replyCountOf: replyCountOf, isUnsealed: isUnsealed, countdownLabel: countdownLabel, timeAgo: timeAgo, moodColorOf: moodColorOf, moods: MOODS, ic: ic };
-  },
-  unmounted: function () { if (window._tracesKey) { window.removeEventListener("keydown", window._tracesKey); window._tracesKey = null; } },
-  template: '\
-<div class="overlay">\
-  <button class="bg anim-backdrop-in" aria-label="关闭" @click="$emit(\'close\')"></button>\
-  <div class="dialog anim-modal-in" role="dialog" aria-modal="true" aria-label="我的足迹">\
-    <div class="dialog-head"><div><h3>我的足迹 🐚</h3><p class="sub">这只浏览器抛出的瓶子 · 共 {{ mine.length }} 只</p></div><button class="icon-btn" aria-label="关闭" @click="$emit(\'close\')" v-html="ic(\'close\')"></button></div>\
-    <div class="dialog-body">\
-      <div v-if="!mine.length" class="empty" style="border:none;background:none;box-shadow:none">\
-        <span class="ico"><span v-html="ic(\'bottle\', \'ic-xl\')"></span></span>\
-        <p class="t">还没有足迹</p>\
-        <p class="d">抛出第一个瓶子后，它会在这里留下脚印。</p>\
-      </div>\
-      <div v-for="b in mine" :key="b.id" class="traces-item">\
-        <div class="traces-meta">\
-          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;box-shadow:0 0 8px currentColor" :style="{ background: moodColorOf(b), color: moodColorOf(b) }"></span>\
-          <span>{{ moods[b.mood].label }}</span>\
-          <span v-if="!isUnsealed(b)">⏳ {{ countdownLabel(b.sealedUntil) }}</span>\
-          <span>🤗 {{ b.hugs }}</span><span>💬 {{ replyCountOf(b) }}</span>\
-          <span style="margin-left:auto">{{ timeAgo(b.createdAt) }}</span>\
-        </div>\
-        <p>{{ b.content }}</p>\
-      </div>\
-    </div>\
-  </div>\
-</div>'
-};
-
 /* ---------------- 根应用 ---------------- */
 var App = {
   components: { HomeView: HomeView, ThrowView: ThrowView, CatchView: CatchView, SpaceView: SpaceView, ToolboxModal: ToolboxModal },
@@ -2458,7 +2429,6 @@ var App = {
     <footer class="footer-note">心灵漂流瓶 · 匿名同伴互助演示版<br/>{{ store.cloudMode }}<br/>抛瓶写入云端 bottles 表 · 捞瓶从云端随机读取 · 断网自动回退本地<br/>若你或身边的人正处于危机中，请拨打 12355 或当地心理援助热线</footer>\
   </main>\
   <button class="fab" aria-label="打开急救工具箱：呼吸引导、白噪音与心理热线" @click="openToolbox()"><span class="ring anim-pulse-ring" aria-hidden="true"></span><span style="position:relative" v-html="ic(\'wind\', \'ic-xl\')"></span></button>\
-  <button class="fab-traces" aria-label="查看我的足迹" @click="store.tracesOpen = true"><span v-html="ic(\'shell\', \'ic-s\')"></span>我的足迹</button>\
   <nav class="bottomnav" aria-label="主导航">\
     <div class="inner">\
       <button v-for="n in NAV" :key="n.id" class="nav-btn" :class="{ active: store.view === n.id }" :aria-current="store.view === n.id ? \'page\' : undefined" @click="go(n.id)">\
