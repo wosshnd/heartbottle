@@ -736,7 +736,7 @@ function checkRisk(text) {
   var crisis = CRISIS_WORDS.filter(function (w) { return t.indexOf(w) >= 0; });
   if (crisis.length) return { level: "crisis", matched: crisis, rewrite: null };
   var hard = checkSensitiveWords(t);   // v2：中文词 + 拼音缩写（边界正则 / 忽略大小写）
-  if (hard.length) return { level: "hard", matched: hard, rewrite: null };
+  if (hard.length) { recordBlock(); return { level: "hard", matched: hard, rewrite: null }; }
   for (var i = 0; i < IMPLICIT_RULES.length; i++) {
     var r = IMPLICIT_RULES[i];
     if (r.re.test(t)) return { level: "implicit", matched: [r.label], rewrite: r.rewrite };
@@ -1190,6 +1190,29 @@ async function cloudPing() {
   }
 }
 
+/* ============ 🛡 轻量级管理员系统（无后端登录，仅本地暗号） ============ */
+var ADMIN_KEY = "xlpb_admin";                 // localStorage 管理员标记
+var ADMIN_SECRET = "heartbottle_admin_2026";  // 暗号（按需求硬编码，不连服务器验证）
+var BLOCK_KEY = "xlpb_blocked";               // 敏感词拦截次数
+function isAdmin() { try { return localStorage.getItem(ADMIN_KEY) === "true"; } catch (e) { return false; } }
+function recordBlock() { try { localStorage.setItem(BLOCK_KEY, String((parseInt(localStorage.getItem(BLOCK_KEY), 10) || 0) + 1)); } catch (e) {} }
+function getBlockedCount() { try { return parseInt(localStorage.getItem(BLOCK_KEY), 10) || 0; } catch (e) { return 0; } }
+
+/** 拉取全部云端瓶子（管理面板用），默认按时间倒序 */
+async function fetchAllBottles() {
+  if (!sb) return [];
+  var { data, error } = await sb.from("bottles").select("*").order("created_at", { ascending: false });
+  if (error) { console.error('Supabase 报错详情:', error); throw error; }
+  return data || [];
+}
+
+/** 删除一只云端瓶子 */
+async function deleteCloudBottle(id) {
+  console.log('准备删除瓶子:', id);
+  var { error } = await sb.from("bottles").delete().eq("id", id);
+  if (error) { console.error('Supabase 报错详情:', error); throw error; }
+}
+
 /* ---------------- 数据仓库（localStorage 模拟四张表） ---------------- */
 var DB_KEY = "xlpb.db.v1";
 var _cache = null;
@@ -1494,6 +1517,8 @@ var store = reactive({
   catchInitial: null,
   catchKey: 0,
   unread: 0,
+  adminVerify: false,             // 「管理员验证」弹窗
+  adminOpen: false,               // 「灯塔值班室」管理面板
   cloudMode: "☁️ 正在连接云端…"   // Supabase 连接状态，由 cloudPing() 更新
 });
 var _toastId = 1;
@@ -1771,10 +1796,24 @@ var HomeView = {
     var night = computed(function () { return store.user && store.user.theme === "night"; });
     var theme = computed(function () { return store.user ? store.user.theme : "dawn"; });
     var energyT = computed(function () { return store.user ? energyTitle(store.user.energy) : ""; });
+    /* 🕯️ 隐藏入口：连点漂流瓶 10 次 → 管理员验证 */
+    var tapCount = ref(0);
+    var tapTimer = null;
+    var tapHint = computed(function () { return tapCount.value >= 3 && tapCount.value < 10 ? "🌊 ×" + tapCount.value : ""; });
+    function onBottleTap() {
+      tapCount.value++;
+      if (tapTimer) clearTimeout(tapTimer);
+      tapTimer = setTimeout(function () { tapCount.value = 0; }, 2200);
+      if (tapCount.value >= 10) {
+        tapCount.value = 0;
+        store.adminVerify = true;
+      }
+    }
     var onBeforeUnmount = _.onBeforeUnmount;
-    onBeforeUnmount(function () { clearInterval(quoteTimer); });
+    onBeforeUnmount(function () { clearInterval(quoteTimer); if (tapTimer) clearTimeout(tapTimer); });
     return {
       ocean: ocean, quoteIdx: quoteIdx, quote: computed(function () { return SEA_QUOTES[quoteIdx.value]; }),
+      tapHint: tapHint, onBottleTap: onBottleTap,
       night: night, theme: theme, energyT: energyT,
       nickname: computed(function () { return store.user ? store.user.nickname : ""; }),
       energy: computed(function () { return store.user ? store.user.energy : 0; }),
@@ -1787,13 +1826,14 @@ var HomeView = {
 <div class="anim-fade-up">\
   <OceanScene :theme="theme" :sea="ocean.sea" :bottles="ocean.drifting" :bottle-count-today="ocean.bottlesToday" :replies-today="ocean.repliesToday" @bottle-click="openBottleById" style="height:62vh;min-height:420px;border-radius:0 0 32px 32px">\
     <div class="home-inner">\
-      <svg class="home-bottle-doodle" viewBox="0 0 80 120" aria-hidden="true">\
+      <svg class="home-bottle-doodle" viewBox="0 0 80 120" aria-hidden="true" @click="onBottleTap" style="cursor:pointer">\
         <path d="M32 8 q-2 6 -1 12 q-8 4 -10 14 q-3 14 -2 34 q1 24 4 34 q2 8 17 8 q15 0 17 -8 q3 -10 4 -34 q1 -20 -2 -34 q-2 -10 -10 -14 q1 -6 -1 -12 q-8 -3 -16 0 Z" fill="rgba(253,247,234,.55)" stroke="#7a5c3e" stroke-width="2.5" stroke-linejoin="round"/>\
         <rect x="29" y="2" width="22" height="9" rx="3" fill="#c8a06a" stroke="#7a5c3e" stroke-width="2.2"/>\
         <path d="M30 62 q10 -6 20 0 q-2 18 -10 18 q-8 0 -10 -18 Z" fill="#fdf3dc" stroke="#a97e4e" stroke-width="2" stroke-linejoin="round"/>\
         <path d="M34 66 l12 10 M46 66 l-12 10" stroke="#c0574f" stroke-width="2" stroke-linecap="round"/>\
         <path d="M24 92 q6 4 12 0 q6 4 12 0" stroke="#a97e4e" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".7"/>\
       </svg>\
+      <span v-if="tapHint" class="tap-hint anim-pop">{{ tapHint }}</span>\
       <div class="home-top">\
         <p class="home-eyebrow" :style="{ color: night ? \'var(--sea-200)\' : \'var(--sea-600)\' }"><span v-html="ic(\'waves\', \'ic-s\')"></span>匿名心理互助 · 面向学生</p>\
         <h1 class="home-title" :style="{ color: night ? \'#fff\' : \'var(--ink-deep)\' }">心灵漂流瓶</h1>\
@@ -2585,9 +2625,169 @@ var WeeklyModal = {
 </div>'
 };
 
+/* ---------------- 组件：管理员验证弹窗 ---------------- */
+var AdminVerify = {
+  emits: ["close"],
+  setup: function (props, ctx) {
+    var pass = ref("");
+    var shake = ref(false);
+    var err = ref("");
+    function submit() {
+      if (pass.value.trim() === ADMIN_SECRET) {
+        try { localStorage.setItem(ADMIN_KEY, "true"); } catch (e) {}
+        store.adminVerify = false;
+        store.adminOpen = true;
+        toast("ok", "验证通过，欢迎回来，守塔人 🕯️");
+      } else {
+        err.value = "暗号不对哦，海浪没有回应你…";
+        shake.value = true;
+        setTimeout(function () { shake.value = false; }, 500);
+      }
+    }
+    onMounted(function () {
+      var onKey = function (e) { if (e.key === "Escape") ctx.emit("close"); };
+      window.addEventListener("keydown", onKey); window._avKey = onKey;
+    });
+    return { pass: pass, shake: shake, err: err, submit: submit, ic: ic };
+  },
+  unmounted: function () { if (window._avKey) { window.removeEventListener("keydown", window._avKey); window._avKey = null; } },
+  template: '\
+<div class="overlay">\
+  <button class="bg anim-backdrop-in" aria-label="关闭" @click="$emit(\'close\')"></button>\
+  <div class="dialog anim-modal-in admin-verify" role="dialog" aria-modal="true" aria-label="管理员验证">\
+    <div class="dialog-head admin-vhead"><div><h3>管理员验证</h3><p class="sub">守塔人专属通道 · 请输入暗号</p></div><button class="icon-btn" aria-label="关闭" @click="$emit(\'close\')" v-html="ic(\'close\')"></button></div>\
+    <div class="dialog-body">\
+      <div :class="{ \'anim-shake\': shake }">\
+        <input type="password" class="admin-input" v-model="pass" placeholder="请输入管理员暗号…" @keyup.enter="submit" aria-label="管理员暗号" />\
+        <p v-if="err" class="admin-err">{{ err }}</p>\
+      </div>\
+      <button class="admin-enter" @click="submit"><span v-html="ic(\'sparkle\', \'ic-m\')"></span>验证并进入值班室</button>\
+      <p class="admin-note">演示环境：暗号校验仅在本地完成，不会联网。</p>\
+    </div>\
+  </div>\
+</div>'
+};
+
+/* ---------------- 组件：灯塔值班室（管理面板） ---------------- */
+var AdminPanel = {
+  emits: ["close"],
+  setup: function (props, ctx) {
+    var loading = ref(true);
+    var all = ref([]);
+    var rows = ref([]);
+    var q = ref("");
+    var moodFilter = ref("all");
+    var onlyDraw = ref(false);
+    var sortBy = ref("new");
+    var confirmId = ref(null);
+    var moodKeys = Object.keys(MOODS);
+
+    function apply() {
+      var list = all.value.slice();
+      if (q.value.trim()) { var k = q.value.trim().toLowerCase(); list = list.filter(function (b) { return String(b.content || "").toLowerCase().indexOf(k) >= 0; }); }
+      if (moodFilter.value !== "all") list = list.filter(function (b) { return (b.mood || "other") === moodFilter.value; });
+      if (onlyDraw.value) list = list.filter(function (b) { return !!b.drawing; });
+      if (sortBy.value === "new") list.sort(function (a, b) { return String(b.created_at || "").localeCompare(String(a.created_at || "")); });
+      else if (sortBy.value === "old") list.sort(function (a, b) { return String(a.created_at || "").localeCompare(String(b.created_at || "")); });
+      else if (sortBy.value === "likes") list.sort(function (a, b) { return (b.likes || 0) - (a.likes || 0); });
+      rows.value = list;
+    }
+    async function load() {
+      loading.value = true;
+      try { all.value = await fetchAllBottles(); } catch (e) { all.value = []; toast("err", "云端读取失败，请检查网络"); }
+      loading.value = false;
+      apply();
+    }
+    watch([q, moodFilter, onlyDraw, sortBy], apply);
+    function del(b) {
+      if (confirmId.value !== b.id) {
+        confirmId.value = b.id;
+        setTimeout(function () { if (confirmId.value === b.id) confirmId.value = null; }, 3000);
+        return;
+      }
+      confirmId.value = null;
+      deleteCloudBottle(b.id).then(function () {
+        all.value = all.value.filter(function (x) { return x.id !== b.id; });
+        apply();
+        toast("ok", "已把一只瓶子送回了深海");
+      }).catch(function (e) { toast("err", "删除失败：" + (e.message || "未知错误")); });
+    }
+    var stats = computed(function () {
+      var today = new Date(); today.setHours(0, 0, 0, 0);
+      var tb = 0, likes = 0;
+      all.value.forEach(function (b) {
+        var d = b.created_at ? new Date(b.created_at) : null;
+        if (d && d >= today) tb++;
+        likes += (b.likes || 0);
+      });
+      return { total: all.value.length, today: tb, likes: likes, blocked: getBlockedCount() };
+    });
+    function exitAdmin() { try { localStorage.removeItem(ADMIN_KEY); } catch (e) {} location.reload(); }
+    onMounted(function () {
+      load();
+      var onKey = function (e) { if (e.key === "Escape") ctx.emit("close"); };
+      window.addEventListener("keydown", onKey); window._apKey = onKey;
+    });
+    return {
+      loading: loading, rows: rows, q: q, moodFilter: moodFilter, onlyDraw: onlyDraw, sortBy: sortBy, confirmId: confirmId,
+      del: del, stats: stats, exitAdmin: exitAdmin, moodKeys: moodKeys, moods: MOODS, timeAgo: timeAgo, nowIso: nowIso, load: load, ic: ic, spinner: spinner
+    };
+  },
+  unmounted: function () { if (window._apKey) { window.removeEventListener("keydown", window._apKey); window._apKey = null; } },
+  template: '\
+<div class="admin-overlay">\
+  <div class="admin-panel anim-modal-in" role="dialog" aria-modal="true" aria-label="灯塔值班室">\
+    <div class="admin-head">\
+      <span class="admin-lamp" aria-hidden="true">🕯️</span>\
+      <div class="admin-headtxt"><h2>灯塔值班室</h2><p>守塔人 · 海区巡查与管理</p></div>\
+      <div class="admin-headbtns">\
+        <button class="admin-refresh" @click="load" aria-label="刷新"><span v-html="ic(\'refresh\', \'ic-s\')"></span>刷新</button>\
+        <button class="admin-exit" @click="exitAdmin">退出管理</button>\
+        <button class="admin-x" @click="$emit(\'close\')" aria-label="收起面板" v-html="ic(\'close\')"></button>\
+      </div>\
+    </div>\
+    <div class="admin-stats">\
+      <div class="astat" style="--ac:#7fb3e8"><p class="an">{{ stats.today }}</p><p class="al">今日新增瓶子</p></div>\
+      <div class="astat" style="--ac:#e8c47c"><p class="an">{{ stats.total }}</p><p class="al">海中瓶子总数</p></div>\
+      <div class="astat" style="--ac:#f0a08c"><p class="an">{{ stats.likes }}</p><p class="al">累计点赞</p></div>\
+      <div class="astat" style="--ac:#9ecba8"><p class="an">{{ stats.blocked }}</p><p class="al">敏感词拦截</p></div>\
+    </div>\
+    <div class="admin-filters">\
+      <input class="admin-search" v-model="q" placeholder="搜索瓶子内容…" aria-label="搜索瓶子内容" />\
+      <select class="admin-select" v-model="moodFilter" aria-label="按心情筛选">\
+        <option value="all">全部心情</option>\
+        <option v-for="k in moodKeys" :key="k" :value="k">{{ moods[k].label }}</option>\
+      </select>\
+      <select class="admin-select" v-model="sortBy" aria-label="排序方式">\
+        <option value="new">最新优先</option>\
+        <option value="old">最早优先</option>\
+        <option value="likes">点赞最多</option>\
+      </select>\
+      <button class="admin-toggle" :class="{ on: onlyDraw }" @click="onlyDraw = !onlyDraw" aria-pressed="onlyDraw">🎨 只看有画</button>\
+    </div>\
+    <div class="admin-list">\
+      <div v-if="loading" class="admin-empty"><span v-html="spinner(\'ic-xl\')" style="color:#e8c47c"></span><p>正在清点海上的瓶子…</p></div>\
+      <div v-else-if="!rows.length" class="admin-empty"><p style="font-size:26px">🌫️</p><p>这片海域没有匹配的瓶子</p></div>\
+      <div v-for="b in rows" :key="b.id" class="admin-row">\
+        <div class="ar-left">\
+          <div class="ar-meta">\
+            <span class="ar-mood">{{ moods[b.mood || \'other\'].label }}</span>\
+            <span v-if="b.drawing" class="ar-draw">🎨 有画</span>\
+            <span class="ar-likes">❤ {{ b.likes || 0 }}</span>\
+            <span class="ar-time">{{ timeAgo(b.created_at || nowIso()) }}</span>\
+          </div>\
+          <p class="ar-content">{{ b.content }}</p>\
+        </div>\
+        <button class="admin-del" :class="{ confirm: confirmId === b.id }" @click="del(b)">{{ confirmId === b.id ? \'确认删除？\' : \'删除\' }}</button>\
+      </div>\
+    </div>\
+  </div>\
+</div>'
+};
+
 /* ---------------- 根应用 ---------------- */
 var App = {
-  components: { HomeView: HomeView, ThrowView: ThrowView, CatchView: CatchView, SpaceView: SpaceView, ToolboxModal: ToolboxModal },
+  components: { HomeView: HomeView, ThrowView: ThrowView, CatchView: CatchView, SpaceView: SpaceView, ToolboxModal: ToolboxModal, AdminVerify: AdminVerify, AdminPanel: AdminPanel },
   setup: function () {
     store.user = Object.assign({}, dbBoot());
     store.unread = unreadCount();
@@ -2597,7 +2797,8 @@ var App = {
     /* 页面底色改为半透明，让固定层的动态海洋画布（波浪 + 气泡）透上来 */
     var bgStyle = computed(function () { return { background: "linear-gradient(180deg, var(--sky3) 0%, rgba(238,233,219,.62) 420px, rgba(238,233,219,.45) 100%)" }; });
     function closeToolbox() { store.toolboxOpen = false; store.toolboxReason = null; }
-    return { store: store, NAV: NAV, themeClass: themeClass, bgStyle: bgStyle, go: go, openBottleById: openBottleById, openToolbox: openToolbox, closeToolbox: closeToolbox, ic: ic };
+    var admin = computed(function () { return isAdmin(); });
+    return { store: store, NAV: NAV, themeClass: themeClass, bgStyle: bgStyle, go: go, openBottleById: openBottleById, openToolbox: openToolbox, closeToolbox: closeToolbox, admin: admin, nowIso: nowIso, ic: ic };
   },
   template: '\
 <div :class="themeClass" :style="bgStyle" style="min-height:100vh">\
@@ -2623,6 +2824,9 @@ var App = {
     </div>\
   </nav>\
   <ToolboxModal v-if="store.toolboxOpen" :reason="store.toolboxReason" @close="closeToolbox" />\
+  <AdminVerify v-if="store.adminVerify" @close="store.adminVerify = false" />\
+  <AdminPanel v-if="store.adminOpen && admin" @close="store.adminOpen = false" />\
+  <button v-if="admin && !store.adminOpen" class="fab-admin" aria-label="打开灯塔值班室（管理面板）" @click="store.adminOpen = true">🕯️</button>\
   <div class="toasts" aria-live="polite"><div v-for="t in store.toasts" :key="t.id" class="toast anim-pop" :class="\'toast-\' + t.type">{{ t.msg }}</div></div>\
 </div>'
 };
