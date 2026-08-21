@@ -145,7 +145,7 @@ img,svg{display:block}
 .cta .count{border-radius:999px;background:rgba(255,255,255,.25);padding:2px 8px;font-size:12px}
 
 /* 首页海面之下卡片 */
-.below{max-width:720px;margin:-20px auto 0;padding:0 16px 24px;display:flex;flex-direction:column;gap:16px}
+.below{max-width:720px;margin:-60px auto 0;padding:0 16px 24px;display:flex;flex-direction:column;gap:16px}
 .panel{border-radius:22px;padding:20px}
 .panel-head{display:flex;align-items:center;justify-content:space-between}
 .panel-title{font-family:var(--font-display);font-size:16px;color:var(--ink-deep)}
@@ -1860,6 +1860,12 @@ var MOOD_WEATHER = {
   self: "自我怀疑像退潮，露出的沙地上其实写满了你走过的路。",
   other: "今天的海面很平静，正适合把心事轻轻放下。"
 };
+
+/* ---------------- 值班员信息 ---------------- */
+var DUTY_INFO = {
+  name: "雾岛值班员 · 会发光的贝壳",
+  energy: 96
+};
 var HomeView = {
   components: { OceanScene: OceanScene },
   setup: function () {
@@ -1878,6 +1884,8 @@ var HomeView = {
       energy: computed(function () { return store.user ? store.user.energy : 0; }),
       moodLabel: computed(function () { return ocean.dominantMood ? MOODS[ocean.dominantMood].label : ""; }),
       weather: computed(function () { return ocean.dominantMood ? MOOD_WEATHER[ocean.dominantMood] : "海面还很安静，大家都在等第一个勇敢的人。不如由你开始？"; }),
+      dutyName: DUTY_INFO.name,
+      dutyEnergy: DUTY_INFO.energy,
       ic: ic, go: go, openBottleById: openBottleById
     };
   },
@@ -1909,20 +1917,24 @@ var HomeView = {
     </div>\
   </OceanScene>\
   <div class="below">\
-    <div class="panel card-soft glass">\
+    <div class="panel card-soft glass" style="position:relative;z-index:30">\
       <div class="panel-head"><h2 class="panel-title">今日心情天气</h2><span class="panel-sub">数据只存在你的浏览器里</span></div>\
       <p class="body">{{ weather }}</p>\
     </div>\
-    <div class="panel card-soft quote-panel glass">\
+    <div class="panel card-soft quote-panel glass" style="position:relative;z-index:30">\
       <span class="quote-mark" aria-hidden="true">”</span>\
       <p class="quote-text" :key="quoteIdx"><span class="anim-fade-up" style="display:inline-block">{{ quote }}</span></p>\
       <p class="quote-by">—— 海边的话 · 每 6 秒换一句</p>\
     </div>\
-    <button class="panel card-soft energy-card glass" @click="go(\'space\')">\
+    <button class="panel card-soft energy-card glass" @click="go(\'space\')" style="position:relative;z-index:30">\
       <span class="energy-left"><span class="energy-ico"><span v-html="ic(\'sparkle\', \'ic-l\')"></span></span>\
       <span><span class="energy-name">{{ nickname }} · {{ energyT }}</span><span class="energy-sub" style="display:block">心灵能量 {{ energy }} · 去「我的空间」看勋章与周报</span></span></span>\
       <span style="color:var(--sea-500);font-size:20px">›</span>\
     </button>\
+    <div class="panel card-soft glass" style="position:relative;z-index:30;text-align:center;padding:14px 20px">\
+      <p style="font-size:12px;color:var(--ink-soft)">{{ dutyName }}</p>\
+      <p style="font-size:11px;color:var(--ink-faint);margin-top:2px">心灵能量 {{ dutyEnergy }} · 去「我的空间」看勋章与周报</p>\
+    </div>\
   </div>\
 </div>'
 };
