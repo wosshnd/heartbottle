@@ -518,6 +518,29 @@ body{line-height:1.6}
 .traces-item{border-radius:18px;background:var(--cream);padding:14px 16px;margin-bottom:10px;box-shadow:0 4px 14px rgba(49,64,95,.07)}
 .traces-item p{font-size:14px;line-height:1.7;color:var(--ink);margin-top:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .traces-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:10px;color:var(--ink-faint)}
+
+/* 涂鸦画布 */
+.doodle-canvas{width:100%;height:180px;border-radius:16px;border:2px dashed var(--sea-300);background:#fffaf2;touch-action:none;cursor:crosshair;display:block}
+/* 危机干预弹窗 */
+.crisis-dialog{max-width:420px}
+.crisis-heart{display:inline-flex;width:64px;height:64px;border-radius:50%;background:var(--coral-100);color:var(--coral-500);align-items:center;justify-content:center;animation:crisisPulse 1.6s ease-in-out infinite}
+@keyframes crisisPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.crisis-lines{margin-top:18px;display:flex;flex-direction:column;gap:10px;text-align:left}
+.crisis-line{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;background:#fff;border:1px solid #f7c3ab;text-decoration:none;transition:transform .15s,box-shadow .2s}
+.crisis-line:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(229,127,88,.25)}
+.cl-ico{flex:none;width:38px;height:38px;border-radius:12px;background:var(--coral-100);color:var(--coral-500);display:flex;align-items:center;justify-content:center}
+.cl-name{display:block;font-size:14px;font-weight:500;color:var(--ink-deep)}
+.cl-desc{display:block;font-size:11px;color:var(--ink-soft);margin-top:2px}
+.crisis-actions{margin-top:20px;display:flex;flex-direction:column;gap:10px}
+.crisis-call{justify-content:center;background:var(--coral-500);color:#fff;font-size:15px;padding:14px;box-shadow:0 8px 22px rgba(229,127,88,.4);text-decoration:none}
+.crisis-call:hover{background:var(--coral-400)}
+.crisis-dismiss{justify-content:center;background:transparent;color:var(--ink-soft);font-size:13px;border:1px solid var(--line)}
+.crisis-dismiss:hover{color:var(--ink)}
+/* 树洞解读卡片 */
+.treehole-card{margin-top:16px;border-radius:20px;background:linear-gradient(170deg,#f2f8ff,#eaf2fb);border:1px solid var(--sea-200);padding:18px;position:relative}
+.treehole-card .th-label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--sea-600)}
+.treehole-card .th-body{margin-top:10px;font-family:var(--font-letter);font-size:15px;line-height:1.8;color:var(--ink)}
+.treehole-card .th-actions{margin-top:14px;display:flex;gap:8px;justify-content:flex-end}
 </style>
 </head>
 <body>
@@ -591,8 +614,10 @@ function calcStreak(activeDays) {
 }
 
 /* ---------------- 安全 · 温暖守门员 ---------------- */
-var HARD_WORDS = ["傻逼","废物","脑残","智障","贱人","蠢货","白痴","去死","找死","滚蛋","打死你","弄死你","等着瞧","要你好看","恶心死了","垃圾人"];
-var CRISIS_WORDS = ["不想活","活不下去","结束生命","了结自己","自杀","自残","割腕","跳楼","跳下去","活着没意思","没有我会更好","消失算了","再见了世界","遗书","安眠药","解脱"];
+/* 第一级：本地敏感词库（显性攻击，命中即拦截） */
+var HARD_WORDS = ["傻逼","煞笔","废物","脑残","智障","贱人","贱货","蠢货","白痴","弱智","去死","找死","该死","滚蛋","滚开","打死你","弄死你","弄死","等着瞧","要你好看","恶心死了","垃圾人","畜生","狗东西","贱b","去你妈"];
+/* 第三级：危机关键词库（触发即介入关怀，绝不拦截冷漠处理） */
+var CRISIS_WORDS = ["不想活","活不下去","结束生命","了结自己","自杀","轻生","自残","割腕","跳楼","跳下去","活着没意思","没有我会更好","消失算了","再见了世界","遗书","安眠药","解脱"];
 var IMPLICIT_RULES = [
   { re: /想太多|想多了/, label: "否定感受", rewrite: "你在意的这件事，值得被认真对待，不是想太多。" },
   { re: /没什么大不了|不至于|多大点事|有什么好(哭|难过|伤心)/, label: "轻视感受", rewrite: "这件事让你这么难受，一定有它的原因，我听到了。" },
@@ -675,7 +700,7 @@ function moodColorOf(b) {
   if (!b) return "#8fb0dc";
   return b.moodColor || MOOD_GLOW[b.mood] || "#8fb0dc";
 }
-var ENERGY_RULES = { throw: 5, catch: 2, reply: 8, like: 1, receiveLike: 2, hug: 1 };
+var ENERGY_RULES = { throw: 5, catch: 2, reply: 8, like: 1, receiveLike: 2, hug: 1, deep: 10 };
 var ENERGY_LABELS = [[0, "刚醒来的小浪花"], [40, "会发光的贝壳"], [100, "温柔的信风"], [200, "海面上的灯塔"], [400, "整片暖流"]];
 function energyTitle(energy) {
   var title = ENERGY_LABELS[0][1];
@@ -744,6 +769,110 @@ function mockReplies(mood) {
   var pool = AI_BANK[mood] || AI_BANK.generic;
   return pool[Math.floor(Math.random() * pool.length)];
 }
+
+/* ---------------- 🌳 AI 树洞解读：保证每个瓶子至少收到一份回应 ---------------- */
+var TREEHOLE_SYSTEM = "你是一个安静的树洞。请认真阅读对方写在漂流瓶里的心事，用第一人称写一段 80-120 字的回应。\n要求：先接住情绪（让对方感到被听见），再轻轻托住（给予陪伴而非答案）。\n禁止：说教、指责、给空洞的鸡汤、说\"你应该\"\"这没什么\"\"想开点\"。\n直接输出回应文字本身，不要任何前缀、引号或解释。";
+var TREEHOLE_BANK = {
+  study: [
+    "我听见了，被排名和作业追着跑的你，真的好累。你已经很努力了，这一点我看得很清楚。今晚不用逼自己马上振作，允许自己先喘口气。明天的事明天再说，此刻的你，值得被温柔对待。我会一直在这里，听你说。",
+    "原来你一个人扛了这么多。在那么多期待里还坚持着，本身就很了不起。别急着否定自己，你走过的每一步都算数。累了就停下来歇一歇，海会替你保管心事，而我会陪着你，慢慢来。"
+  ],
+  exam: [
+    "考前的心跳那么快，是因为你在乎。这份在乎没有错，它说明你认真对待自己的生活。但请记得，一场考试定义不了你。无论结果如何，那个努力过的你都值得被肯定。深呼吸，你已经做得很好了，我在这里陪你。",
+    "倒计时的滴答声确实让人心慌。可我想告诉你，紧张的反面是在意，而在意的人不会差。你已经为它准备了那么久，剩下的交给时间就好。别把自己逼太紧，适当休息也是备考的一部分。我听见你了，你并不孤单。"
+  ],
+  social: [
+    "在人群里感到孤单，是最安静也最磨人的感受。谢谢你愿意说出来。不是所有人都要走进你的世界，慢慢靠近让你舒服的人，一两个就够了。合群不是唯一的答案，你的节奏也值得被尊重。我会陪着你，等你遇见同频的人。",
+    "被晾在一边的感觉，像站在热闹外面看里面。我陪你站一会儿。你不需要为了融入而改变自己，真实的你就很好。总会有人因为你的本真而靠近。在那之前，先好好陪着自己。我一直都在。"
+  ],
+  family: [
+    "最亲近的人带来的压力，往往最难开口。你的委屈，在这里可以安心放下。在期待和你自己之间找平衡，本来就很难，而你在认真面对。先照顾好自己，再去处理关系，这个顺序没有错。你的感受很重要，我听见了。",
+    "被安排的感觉，像是自己的声音一直没被听见。这份失落是真的。你不需要立刻让所有人理解你，先温柔地对待那个努力的自己。家的事慢慢来，你的感受我接住了。无论怎样，请记得你值得被好好爱着。"
+  ],
+  self: [
+    "你正在用很高的标准打量自己，所以才会这么疼。但我想说，看见你闪光的人，比你以为的多。会自我怀疑，往往是因为想变得更好，这份认真本身就值得肯定。你不需要完美才值得被喜欢，真实的你已经足够好了。",
+    "和自己较劲的日子，连呼吸都是累的。先抱抱那个一直努力的自己吧。怀疑的雾会散，你一直在往前走，这就够了。别用别人的尺子量自己的人生，你有你的时区。我看见了你的努力，你比你想象中更好。"
+  ],
+  other: [
+    "谢谢你愿意把心事放进瓶子。这些情绪沉甸甸的，一个人拿着真的不容易。能被说出来的难过，就已经轻了一半。此刻不用急着解决什么，先抱抱自己。我会在这里，安静地陪着你，等你准备好。",
+    "瓶子漂到了我这里，你的心事我认真读完了。有这些情绪，不是你的错。情绪像潮水，会涨也会退，你已经在水里站了很久，很厉害了。今天为自己做一件小小的温柔的事吧，哪怕只是早点睡。海面会一直陪着你。"
+  ],
+  generic: [
+    "我听见了。谢谢你愿意说出来，这需要勇气。此刻的你不需要马上好起来，慢慢说，慢慢走。我会一直在这里，安静地陪着你。你的感受很重要，你也很重要。",
+    "谢谢你把心事交给我。这些情绪一个人扛着，一定很辛苦吧。别急着责备自己，有这些感受很正常。先抱抱自己，好吗？我会陪你一起，慢慢走过这段路。"
+  ]
+};
+function getTreeHole(content, mood) {
+  if (AI_CONFIG.apiKey) {
+    return fetch(AI_CONFIG.apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + AI_CONFIG.apiKey },
+      body: JSON.stringify({
+        model: AI_CONFIG.model,
+        messages: [ { role: "system", content: TREEHOLE_SYSTEM }, { role: "user", content: content } ],
+        temperature: 0.8, max_tokens: 300
+      })
+    }).then(function (res) { return res.json(); })
+      .then(function (data) {
+        var text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        return text ? text.trim() : mockTreeHole(mood);
+      }).catch(function () { return mockTreeHole(mood); });
+  }
+  return new Promise(function (resolve) {
+    setTimeout(function () { resolve(mockTreeHole(mood)); }, 900 + Math.random() * 500);
+  });
+}
+function mockTreeHole(mood) {
+  var pool = TREEHOLE_BANK[mood] || TREEHOLE_BANK.generic;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+/* ---------------- 🛡️ AI 语义审核：判断文本是否安全（第二级） ---------------- */
+var REVIEW_SYSTEM = "你是一个温和的内容审核员。请判断以下文本是否包含辱骂、攻击、色情或极端负面情绪。如果是，返回 false；如果是正常倾诉或求助，返回 true。\n只输出 JSON 对象 { \"safe\": true 或 false }，不要其他内容。";
+function aiReview(text) {
+  if (AI_CONFIG.apiKey) {
+    return fetch(AI_CONFIG.apiUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + AI_CONFIG.apiKey },
+      body: JSON.stringify({
+        model: AI_CONFIG.model, response_format: { type: "json_object" },
+        messages: [ { role: "system", content: REVIEW_SYSTEM }, { role: "user", content: text } ],
+        temperature: 0.1, max_tokens: 50
+      })
+    }).then(function (res) { return res.json(); })
+      .then(function (data) {
+        var parsed = JSON.parse((data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || "{}");
+        return parsed.safe === true;
+      }).catch(function () { return true; });   // 审核失败时放行，不阻断正常倾诉
+  }
+  return new Promise(function (resolve) { setTimeout(function () { resolve(true); }, 400); });
+}
+
+/* ---------------- 🔮 缘分匹配：心情的互补映射 ---------------- */
+/* 键=我的心情色，值=互补治愈时优先捞取的心情色（难过→开心，烦躁→平静…） */
+var COMPLEMENT = {
+  "#f0b95a": "#63a695",  // 开心 → 平静
+  "#63a695": "#f0b95a",  // 平静 → 开心
+  "#6b8cc7": "#f0b95a",  // 难过 → 开心
+  "#e57f58": "#63a695",  // 烦躁 → 平静
+  "#9b8ad0": "#f0b95a"   // 迷茫 → 开心
+};
+/* 按缘分模式给本地瓶子加权：同频(相同心情色)+6，互补+3，其余+1 */
+function fatePick(pool, mode, myColor) {
+  if (!pool.length) return null;
+  if (mode === "random" || !myColor) return pool[Math.floor(Math.random() * pool.length)];
+  var target = mode === "same" ? myColor : (COMPLEMENT[myColor] || myColor);
+  var weights = pool.map(function (b) {
+    if (b.moodColor === target) return mode === "same" ? 7 : 3;
+    if (mode === "complement" && b.moodColor === myColor) return 1;
+    return 1;
+  });
+  var total = weights.reduce(function (a, b) { return a + b; }, 0);
+  var r = Math.random() * total;
+  for (var i = 0; i < pool.length; i++) { r -= weights[i]; if (r <= 0) return pool[i]; }
+  return pool[pool.length - 1];
+}
+
 var AI_QUOTES = {
   exam: ["这周你把焦虑写进了瓶子，也把勇气留给了自己。下一周，慢慢来。", "紧张说明你在乎，在乎的人运气不会太差。"],
   study: ["压力没有把你压垮，反而让你学会了倾诉。这就是成长的声音。", "你已经走了很远的路，别忘了回头看看身后的脚印。"],
@@ -813,41 +942,36 @@ var sb = (window.supabase && window.supabase.createClient)
  *                       这是正常现象——数据已经写进数据库了。
  * @throws  插入失败（400 / 断网等）时抛出原始 error 对象，由调用方决定降级策略
  */
-async function throwBottle(content, extra) {
-  extra = extra || {};
-  /* 1) 自适应组装插入数据：
-        优先写 { content, mood_color }（心情瓶色，需要表里有 mood_color 列）；
-        若 mood_color 列不存在导致 400，自动降级为只写 { content }，
-        保证无论表结构如何都能抛瓶成功。 */
-  var full = { content: content };
-  if (extra.mood_color) full.mood_color = extra.mood_color;
+/**
+ * 抛瓶子：向 bottles 表插入一条数据
+ * ------------------------------------------------------------------
+ * ⚠️ 你的 bottles 表目前只有 content 一列，所以这里严格只写 content。
+ *    多写任何一个表里不存在的列（mood_color / doodle / depth…）都会 400。
+ *    涂鸦、心情、深浅海等玩法数据全部存在浏览器本地（见 createBottle），
+ *    云端只负责共享「文字内容」，等以后给表加了列再往这里补字段。
+ *
+ *   · 表名严格使用 'bottles'（全小写）
+ *   · 字段名严格使用 content
+ *   · 不链式调用 .select()，插入后直接拿结果
+ *   · 插入前 console.log 数据；出错时打印完整 error 对象
+ */
+async function throwBottle(content) {
+  // 1) 组装数据：严格只有 content 一个字段
+  var data = { content: content };
 
   // 2) 插入前打印，方便在控制台确认数据长什么样
-  console.log('准备插入的数据:', full);
+  console.log('准备插入的数据:', data);
 
-  try {
-    // 3) 表名严格 'bottles'；插入后直接拿结果，不链式调用 .select()
-    var { error } = await sb.from("bottles").insert(full);
-    if (error) throw error;   // error 不为 null 就抛出，交给 catch 统一打印
-    return true;
-  } catch (err) {
-    // 4) catch 错误时，打印完整的 error 对象（含 code / message / details / hint）
-    console.error('Supabase 报错详情:', err);
-    if (extra.mood_color) {
-      // 5) 降级重试：只插 content（mood_color 列还没加到表里时走这条路）
-      var plain = { content: content };
-      console.log('降级为最小字段重新插入:', plain);
-      try {
-        var retry = await sb.from("bottles").insert(plain);
-        if (retry.error) throw retry.error;
-        return true;
-      } catch (err2) {
-        console.error('Supabase 报错详情:', err2);
-        throw err2;
-      }
-    }
-    throw err;
+  // 3) 表名严格 'bottles'；插入后直接返回结果，不链式调用 .select()
+  var result = await sb.from("bottles").insert(data);
+
+  // 4) insert 不会抛异常，数据库错误放在 result.error 里，需要手动检查
+  if (result.error) {
+    // 5) 打印完整的 error 对象（含 code / message / details / hint）
+    console.error('Supabase 报错详情:', result.error);
+    throw result.error;
   }
+  return result;
 }
 
 /**
@@ -1003,16 +1127,30 @@ function catchRandom(excludeId) {
 }
 function createBottle(input) {
   var u = dbMe();
-  var bottle = { id: dbUid(), authorId: u.id, content: input.content, mood: input.mood, moodColor: input.moodColor || null, skin: u.skin, hugs: 0, huggedBy: [], wantsReply: input.wantsReply, target: input.target, sealedUntil: input.sealedUntil, openedNoticeSent: !input.sealedUntil, createdAt: nowIso() };
+  /* 本地瓶子保留全部玩法字段：心情色、涂鸦(base64)、深浅海、时间胶囊…
+     这些只存在浏览器里；同步到云端时只写 content（你的表只有这一列）。 */
+  var bottle = {
+    id: dbUid(), authorId: u.id,
+    content: input.content,
+    mood: input.mood,
+    moodColor: input.moodColor || null,
+    doodle: input.doodle || null,                 // 🎨 灵魂涂鸦 base64
+    depth: input.depth || 0,                      // 🌊 0=浅滩 1=深海
+    skin: u.skin, hugs: 0, huggedBy: [],
+    wantsReply: input.wantsReply,
+    target: input.target,
+    sealedUntil: input.sealedUntil,
+    openedNoticeSent: !input.sealedUntil,
+    createdAt: nowIso()
+  };
   dbLoad().bottles.push(bottle);
   dbAddEnergy(ENERGY_RULES.throw);
 
   /* ☁️ 云端同步：只有「立刻漂给陌生人」的普通瓶子才进海；
         时间胶囊（sealedUntil）要等开启后才该被捞到，故暂不上传。
-        mood_color 列不存在时 throwBottle 内部会自动降级为只写 content。
-        同步失败不影响本地体验，仅更新页脚连接状态。 */
+        注意：云端只同步 content 一个字段（见 throwBottle 注释）。 */
   if (sb && input.target === "ocean" && !input.sealedUntil) {
-    throwBottle(input.content, { mood_color: input.moodColor || null })
+    throwBottle(input.content)
       .then(function () { store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步"; })
       .catch(function (err) {
         // ☁️ 云端同步失败的兜底处理：本地瓶子不受影响，页脚切回离线模式
@@ -1021,6 +1159,14 @@ function createBottle(input) {
       });
   }
   return bottle;
+}
+
+/* 阅后即焚：把瓶子从本地海里移除，把空间留给新的心事 */
+function releaseBottle(bottleId) {
+  var db = dbLoad();
+  var i = db.bottles.findIndex(function (b) { return b.id === bottleId; });
+  if (i >= 0) { db.bottles.splice(i, 1); dbSave(); return true; }
+  return false;
 }
 function toggleHug(bottleId) {
   var b = getBottle(bottleId); var id = dbMe().id;
@@ -1282,7 +1428,7 @@ var CareAlert = {
       <span class="care-ico"><span v-html="ic(hard ? \'shield\' : \'heartFilled\', \'ic-l\')"></span></span>\
       <div>\
         <h4 class="care-title">{{ hard ? "这条消息被拦下了" : "温暖守门员 · 轻轻提醒" }}</h4>\
-        <p class="care-body">{{ hard ? "这句话里含有攻击性语言，可能会伤害到别人，所以不能发送。这片海，只接纳温柔。" : "这句话可能会让对方感到被否定哦，要不要试试换一种更接纳的表达方式？" }}</p>\
+        <p class="care-body">{{ hard ? "检测到不友善的词汇哦，大海只接受温柔的心事，请换个表达方式吧~" : "你的文字似乎带着刺，也许换一种方式表达，世界会更温柔待你。" }}</p>\
       </div>\
     </div>\
     <div v-if="matched.length" class="care-tags"><span class="lbl">检测到：</span><span v-for="m in matched.slice(0,4)" :key="m" class="care-tag">“{{ m }}”</span></div>\
@@ -1291,6 +1437,43 @@ var CareAlert = {
       <button class="btn btn-sea" style="margin-top:12px;font-size:12px;padding:8px 16px" @click="$emit(\'use-rewrite\', rewrite)">换成这句，继续编辑</button>\
     </div>\
     <button class="btn" :class="hard ? \'\' : \'\'" :style="{ marginTop:\'20px\', width:\'100%\', justifyContent:\'center\', background: hard ? \'var(--rose-400)\' : \'var(--sea-600)\', color:\'#fff\', boxShadow:\'0 6px 18px rgba(0,0,0,.15)\' }" @click="$emit(\'close\')">好的，我换个说法</button>\
+  </div>\
+</div>'
+};
+
+/* ---------------- 组件：危机干预弹窗（第三级安全） ---------------- */
+/* 检测到危机关键词时全屏弹出：不拦截、不发送，先递上专业的关怀与求助渠道 */
+var CrisisModal = {
+  emits: ["close"],
+  setup: function (props, ctx) {
+    onMounted(function () {
+      var onKey = function (e) { if (e.key === "Escape") ctx.emit("close"); };
+      window.addEventListener("keydown", onKey);
+      window._crisisKey = onKey;
+    });
+    return { ic: ic, hotlines: HOTLINES };
+  },
+  unmounted: function () { if (window._crisisKey) { window.removeEventListener("keydown", window._crisisKey); window._crisisKey = null; } },
+  template: '\
+<div class="overlay" style="background:linear-gradient(160deg, rgba(255,214,180,.35), rgba(255,235,220,.6))">\
+  <div class="dialog anim-modal-in crisis-dialog" role="alertdialog" aria-modal="true" aria-label="我们在这里陪你" style="background:linear-gradient(170deg, #fff7ef, #fdeee4);border:1px solid #f7c3ab">\
+    <div class="dialog-body" style="text-align:center;padding:28px 24px">\
+      <span class="crisis-heart"><span v-html="ic(\'heartFilled\', \'ic-xl\')"></span></span>\
+      <h3 class="font-display" style="font-size:20px;color:var(--ink-deep);margin-top:14px">亲爱的朋友，我们在这里</h3>\
+      <p style="margin-top:12px;font-size:14px;line-height:1.8;color:var(--ink)">感觉到你现在很痛苦。<br/>请相信，这一切都会过去的。<br/><b style="font-weight:500;color:var(--coral-500)">你并不孤单，有人愿意倾听你。</b></p>\
+      <p style="margin-top:10px;font-size:12px;line-height:1.7;color:var(--ink-soft)">这封信先不抛进海里。此刻，让专业的人先陪陪你，好吗？</p>\
+      <div class="crisis-lines">\
+        <a v-for="h in hotlines" :key="h.phone" class="crisis-line" :href="\'tel:\' + h.phone.replace(/-/g, \'\')">\
+          <span class="cl-ico"><span v-html="ic(\'phone\', \'ic-m\')"></span></span>\
+          <span class="cl-info"><span class="cl-name">{{ h.name }}</span><span class="cl-desc">{{ h.desc }} · {{ h.phone }}</span></span>\
+        </a>\
+      </div>\
+      <div class="crisis-actions">\
+        <a class="btn crisis-call" :href="\'tel:\' + hotlines[2].phone.replace(/-/g, \'\')"><span v-html="ic(\'phone\', \'ic-m\')"></span>我需要帮助</a>\
+        <button class="btn crisis-dismiss" @click="$emit(\'close\')">我只是说说，关掉它</button>\
+      </div>\
+      <p style="margin-top:14px;font-size:11px;color:var(--ink-faint)">如果身边有人正处于危险中，请直接拨打 110 / 120</p>\
+    </div>\
   </div>\
 </div>'
 };
@@ -1483,7 +1666,9 @@ var ThrowView = {
   setup: function (props, ctx) {
     var content = ref(""), mood = ref(null), moodColor = ref(null), wantsReply = ref(true), future = ref(false);
     var capDays = ref(7), customDate = ref(""), target = ref("ocean");
+    var depth = ref(0);                                   // 🌊 0=浅滩 1=深海
     var phase = ref("edit"), care = ref(null), shake = ref(false), doneMsg = ref("");
+    var crisisOpen = ref(false);                          // ☎️ 危机干预弹窗
     var moodColorName = computed(function () {
       var hit = MOOD_COLORS.filter(function (c) { return c.hex === moodColor.value; })[0];
       return hit ? "「" + hit.name + "」的光晕会跟着瓶子漂流" : "未选择 · 默认海蓝光晕";
@@ -1496,6 +1681,35 @@ var ThrowView = {
     var danger = computed(function () { return isCrisisText(content.value); });
     var tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
     var warmth = computed(function () { return warmthScore(content.value); });
+
+    /* ---------------- 🎨 灵魂涂鸦板 ---------------- */
+    var doodleOpen = ref(false), hasDoodle = ref(false), doodleCanvas = ref(null);
+    var drawing = false, doodleCtx = null;
+    function initDoodle() {
+      nextTick(function () {
+        var c = doodleCanvas.value; if (!c || c._init) return;
+        c._init = true; c.width = 600; c.height = 300;
+        doodleCtx = c.getContext("2d");
+        doodleCtx.fillStyle = "#fffaf2"; doodleCtx.fillRect(0, 0, 600, 300);
+        doodleCtx.lineCap = "round"; doodleCtx.lineJoin = "round"; doodleCtx.lineWidth = 5;
+        doodleCtx.strokeStyle = moodColor.value || "#6b9bd8";
+      });
+    }
+    function toggleDoodle() { doodleOpen.value = !doodleOpen.value; if (doodleOpen.value) initDoodle(); }
+    function dpos(e) {
+      var c = doodleCanvas.value, r = c.getBoundingClientRect();
+      return { x: (e.clientX - r.left) * (c.width / r.width), y: (e.clientY - r.top) * (c.height / r.height) };
+    }
+    function startDraw(e) { if (!doodleCtx) return; drawing = true; var p = dpos(e); doodleCtx.beginPath(); doodleCtx.moveTo(p.x, p.y); }
+    function moveDraw(e) { if (!drawing || !doodleCtx) return; var p = dpos(e); doodleCtx.lineTo(p.x, p.y); doodleCtx.stroke(); hasDoodle.value = true; }
+    function endDraw() { drawing = false; }
+    function clearDoodle() {
+      var c = doodleCanvas.value; if (!c || !doodleCtx) return;
+      doodleCtx.fillStyle = "#fffaf2"; doodleCtx.fillRect(0, 0, c.width, c.height);
+      hasDoodle.value = false;
+    }
+    function doodleData() { return (hasDoodle.value && doodleCanvas.value) ? doodleCanvas.value.toDataURL("image/png") : null; }
+
     function doSend() {
       phase.value = "sending";
       setTimeout(function () {
@@ -1504,7 +1718,7 @@ var ThrowView = {
           if (capDays.value === "custom") sealedUntil = customDate.value ? new Date(customDate.value + "T08:00:00").toISOString() : null;
           else sealedUntil = futureIso(capDays.value);
         }
-        createBottle({ content: content.value.trim(), mood: mood.value || "other", moodColor: moodColor.value, wantsReply: wantsReply.value, target: future.value ? target.value : "ocean", sealedUntil: sealedUntil });
+        createBottle({ content: content.value.trim(), mood: mood.value || "other", moodColor: moodColor.value, doodle: doodleData(), depth: depth.value, wantsReply: wantsReply.value, target: future.value ? target.value : "ocean", sealedUntil: sealedUntil });
         doneMsg.value = sealedUntil
           ? (target.value === "self" ? "这封信被时间好好收着，到了那一天，会在「我的空间」悄悄打开。" : "这是一只未来的瓶子，时间到了，它才会漂进海里被别人捞起。")
           : (wantsReply.value ? "瓶子已经出发。有人回信时，你会在「我的空间」收到提醒。" : "瓶子已经出发，正随着海浪漂向某个需要它的人。");
@@ -1512,21 +1726,35 @@ var ThrowView = {
         refreshUser();
       }, 900);
     }
+    /* 三级内容安全：危机干预 → 敏感词拦截 → AI 语义审核 */
     function submit() {
       var t = content.value.trim();
       if (t.length < 4) { shake.value = true; setTimeout(function () { shake.value = false; }, 500); toast("warn", "再多写几个字吧，海才能听见你"); return; }
       var risk = checkRisk(t);
-      if (risk.level === "crisis") { ctx.emit("open-toolbox", "我们注意到瓶子里有很沉重的心事，先照顾一下自己好吗？"); return; }
-      if (risk.level === "hard") { care.value = { tone: "hard", matched: risk.matched, rewrite: null }; return; }
-      if (risk.level === "implicit") { care.value = { tone: "implicit", matched: risk.matched, rewrite: risk.rewrite }; return; }
-      doSend();
+      /* ③ 危机干预（最高优先）：不拦截、不发送，立刻弹出关怀 */
+      if (risk.level === "crisis") { crisisOpen.value = true; return; }
+      /* ① 敏感词：直接拦截 + 温暖提示 */
+      if (risk.level === "hard") {
+        toast("warn", "检测到不友善的词汇哦，大海只接受温柔的心事，请换个表达方式吧~");
+        care.value = { tone: "hard", matched: risk.matched, rewrite: null }; return;
+      }
+      /* ② AI 语义审核：通过才允许存入数据库 */
+      phase.value = "reviewing";
+      aiReview(t).then(function (safe) {
+        phase.value = "edit";
+        if (!safe) { care.value = { tone: "implicit", matched: [], rewrite: null }; return; }
+        if (risk.level === "implicit") { care.value = { tone: "implicit", matched: risk.matched, rewrite: risk.rewrite }; return; }
+        doSend();
+      });
     }
-    function reset() { content.value = ""; mood.value = null; moodColor.value = null; future.value = false; phase.value = "edit"; }
+    function reset() { content.value = ""; mood.value = null; moodColor.value = null; future.value = false; depth.value = 0; clearDoodle(); phase.value = "edit"; }
     function onContent(e) { content.value = e.target.value.slice(0, 300); }
     return {
       content: content, mood: mood, moodColor: moodColor, moodColorName: moodColorName, doneFilter: doneFilter, moodColors: MOOD_COLORS,
-      wantsReply: wantsReply, future: future, capDays: capDays, customDate: customDate, target: target,
-      phase: phase, care: care, shake: shake, doneMsg: doneMsg, danger: danger, tomorrow: tomorrow, warmth: warmth,
+      wantsReply: wantsReply, future: future, capDays: capDays, customDate: customDate, target: target, depth: depth,
+      phase: phase, care: care, shake: shake, doneMsg: doneMsg, danger: danger, tomorrow: tomorrow, warmth: warmth, crisisOpen: crisisOpen,
+      doodleOpen: doodleOpen, hasDoodle: hasDoodle, doodleCanvas: doodleCanvas,
+      toggleDoodle: toggleDoodle, startDraw: startDraw, moveDraw: moveDraw, endDraw: endDraw, clearDoodle: clearDoodle,
       moods: MOOD_LIST, submit: submit, reset: reset, onContent: onContent,
       energyThrow: ENERGY_RULES.throw, glassBottleSvg: glassBottleSvg, ic: ic, spinner: spinner, go: go,
       openToolbox: function (r) { ctx.emit("open-toolbox", r); }
@@ -1571,7 +1799,28 @@ var ThrowView = {
         <button v-for="c in moodColors" :key="c.hex" class="swatch" :class="{ sel: moodColor === c.hex }" :style="{ background: c.hex, color: c.hex }" :aria-pressed="moodColor === c.hex" :aria-label="c.name" :title="c.name" @click="moodColor = (moodColor === c.hex ? null : c.hex)"></button>\
         <span class="swatch-name">{{ moodColorName }}</span>\
       </div>\
-      <p style="margin-top:8px;font-size:11px;line-height:1.6;color:var(--ink-faint)">颜色会随瓶子存入数据库（mood_color 列），捞瓶人看到的卡片会泛起对应颜色的光。</p>\
+      <p style="margin-top:8px;font-size:11px;line-height:1.6;color:var(--ink-faint)">颜色代表此刻的心情，捞瓶人可以按心情「同频共振」或「互补治愈」地捞到你。</p>\
+    </div>\
+    <div style="margin-top:16px">\
+      <p class="section-label">🌊 放进哪片海？</p>\
+      <div class="chips" role="group" aria-label="选择深浅海">\
+        <button class="pill pill-sea" :class="{ sel: depth === 0 }" :aria-pressed="depth === 0" @click="depth = 0">🐚 浅滩 · 日常小事、随性吐槽</button>\
+        <button class="pill pill-dusk" :class="{ sel: depth === 1 }" :aria-pressed="depth === 1" @click="depth = 1">🌊 深海 · 沉重的秘密、长期的困惑</button>\
+      </div>\
+      <p style="margin-top:8px;font-size:11px;line-height:1.6;color:var(--ink-faint)">深海瓶更安静。捞深海瓶的人需要先鼓起勇气，所以这里的心事会被更郑重地对待。</p>\
+    </div>\
+    <div class="capsule-box" style="margin-top:16px">\
+      <div class="capsule-top">\
+        <span class="capsule-title">🎨 灵魂涂鸦 · 画下此刻的情绪（可选）</span>\
+        <button class="switch" :class="{ on: doodleOpen }" role="switch" :aria-checked="doodleOpen" aria-label="展开涂鸦板" @click="toggleDoodle"><span class="knob"></span></button>\
+      </div>\
+      <div v-if="doodleOpen" class="anim-fade-up" style="margin-top:12px">\
+        <canvas ref="doodleCanvas" class="doodle-canvas" @pointerdown="startDraw" @pointermove="moveDraw" @pointerup="endDraw" @pointerleave="endDraw" aria-label="涂鸦画布"></canvas>\
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px">\
+          <p style="font-size:11px;line-height:1.6;color:var(--ink-faint)">一团乱麻也好，一个太阳也罢，情绪本就不止于文字。</p>\
+          <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px" @click="clearDoodle">清空重画</button>\
+        </div>\
+      </div>\
     </div>\
     <div class="switch-row" style="margin-top:20px">\
       <span><span class="t">希望收到回信</span><span class="d" style="display:block">有人回复时，你会在「我的空间」收到匿名提醒</span></span>\
@@ -1594,13 +1843,15 @@ var ThrowView = {
         <p style="font-size:11px;line-height:1.6;color:var(--ink-soft)">开启之前，这封信会被时间封存，谁也捞不到——包括你自己。</p>\
       </div>\
     </div>\
-    <button class="submit-big" :disabled="phase === \'sending\'" @click="submit">\
+    <button class="submit-big" :disabled="phase === \'sending\' || phase === \'reviewing\'" @click="submit">\
       <template v-if="phase === \'sending\'"><span v-html="spinner(\'ic-m\')"></span> 瓶子正在装好信纸…</template>\
+      <template v-else-if="phase === \'reviewing\'"><span v-html="spinner(\'ic-m\')"></span> 温暖守门员正在读你的信…</template>\
       <template v-else><span v-html="ic(\'send\', \'ic-m\')"></span>{{ future ? "封存进时间胶囊" : "匿名抛进大海" }}</template>\
     </button>\
-    <p class="form-hint">发送前会经过温暖守门员检测 · 攻击性语言会被温柔拦下</p>\
+    <p class="form-hint">发送前会经过三级守护：危机关怀 · 敏感词拦截 · AI 语义审核</p>\
   </div>\
   <CareAlert v-if="care" :tone="care.tone" :matched="care.matched" :rewrite="care.rewrite" @close="care = null" @use-rewrite="(t) => { content = t; care = null; }" />\
+  <CrisisModal v-if="crisisOpen" @close="crisisOpen = false" />\
 </div>'
 };
 
@@ -1632,6 +1883,10 @@ var CatchView = {
       typed.value = bottle.value.content; typing.value = false;
     }
     onUnmounted(function () { if (typeTimer) clearInterval(typeTimer); });
+    /* 🌊 分区（浅滩/深海） + 🔮 缘分匹配（随缘/同频/互补） */
+    var zone = ref(0), fateMode = ref("random"), myMoodColor = ref(null), calmOpen = ref(false);
+    /* 🌳 AI 树洞解读 */
+    var treeholeOpen = ref(false), treeholeLoading = ref(false), treeholeText = ref("");
     /* ❤️ 送出温暖：爱心飘浮 + 云端 likes 回写 */
     var warmHearts = ref([]), cloudLiked = ref(false);
     function burstHearts() {
@@ -1662,27 +1917,42 @@ var CatchView = {
       burstHearts();
       refreshUser();
     }
+    /* 🌊 本地海区：按深浅海过滤（云端瓶无 depth 列，只在浅滩随缘时混入） */
+    function localPool(z) {
+      var id = store.user ? store.user.id : null;
+      return listDrifting().filter(function (b) {
+        if (b.authorId === id) return false;     // 不捞自己抛的
+        if ((b.depth || 0) !== z) return false;  // 按深浅海分区过滤
+        return true;
+      });
+    }
     function fetchOne(excludeId) {
       phase.value = "fetching"; composer.value = ""; chosenStyle.value = null; aiOpen.value = false; aiReplies.value = null;
       cloudLiked.value = false; warmHearts.value = []; typed.value = ""; typing.value = false;
+      treeholeOpen.value = false; treeholeText.value = "";
       if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
       setTimeout(async function () {
         var b = null;
         if (!usedInitial && props.initialBottleId) {
           b = getBottle(props.initialBottleId) || null;          // 从通知点进来的指定瓶子
         } else {
-          /* ☁️ 云端优先：先请 Supabase 随机捞一条；
-             空海 / 断网 / 表未建好 → 自动退回本地海区的瓶子 */
-          if (sb) {
+          /* 本地海区：先按深浅海分区，再按缘分模式加权挑选 */
+          var pool = localPool(zone.value).filter(function (x) { return x.id !== excludeId; });
+          b = fatePick(pool, fateMode.value, myMoodColor.value);
+          /* 浅滩 + 随缘时，混入云端共享海的瓶子，让"共同的大海"一直在 */
+          if (zone.value === 0 && sb) {
             try {
               var row = await getRandomBottle();
-              if (row) b = cloudToLocal(row);
+              var cb = row ? cloudToLocal(row) : null;
+              if (cb) {
+                if (!b) b = cb;
+                else if (fateMode.value === "random" && Math.random() < 0.5) b = cb;
+              }
             } catch (e) {
               console.error('Supabase 报错详情:', e);
               store.cloudMode = "🐚 离线模式 · 仅本地存储";
             }
           }
-          if (!b) b = catchRandom(excludeId);
         }
         usedInitial = true;
         if (!b) { bottle.value = null; phase.value = "empty"; return; }
@@ -1690,6 +1960,52 @@ var CatchView = {
         bottle.value = b; replies.value = listReplies(b.id); phase.value = "letter";
         startTyping(b.content);   // ✍️ 像写信一样逐字展开
       }, 850);
+    }
+    /* 🌊 切换海区：进深海需要先鼓足勇气（消耗能量）并看一段平复引导 */
+    function setZone(z) {
+      if (z === zone.value) return;
+      if (z === 1) {
+        var me = dbMe();
+        if ((me.energy || 0) < ENERGY_RULES.deep) {
+          toast("warn", "潜入深海需要 " + ENERGY_RULES.deep + " 点勇气（心灵能量），先去攒一点吧~");
+          return;
+        }
+        calmOpen.value = true;   // 先看 calming 引导语，再下潜
+      } else {
+        zone.value = 0;
+        fetchOne();
+      }
+    }
+    function enterDeep() {
+      dbAddEnergy(-ENERGY_RULES.deep);   // 消耗勇气
+      refreshUser();
+      zone.value = 1;
+      calmOpen.value = false;
+      fetchOne();
+    }
+    /* 🔮 选择我的心情（用于同频/互补匹配） */
+    function setMyMood(hex) { myMoodColor.value = (myMoodColor.value === hex) ? null : hex; }
+    function setFate(m) { fateMode.value = m; }
+    /* 🌳 AI 树洞解读：保证每个瓶子至少收到一份回应 */
+    function openTreeHole() {
+      if (!bottle.value) return;
+      treeholeOpen.value = true;
+      if (treeholeText.value) return;
+      treeholeLoading.value = true;
+      getTreeHole(bottle.value.content, bottle.value.mood).then(function (t) { treeholeText.value = t; treeholeLoading.value = false; });
+    }
+    function useTreeHole() {
+      composer.value = treeholeText.value;
+      aiOpen.value = false;
+      toast("ok", "树洞的回声已填入，改成你的语气再送出吧");
+    }
+    /* 🕊️ 阅后即焚：接住这份心事，让瓶子随风而去 */
+    function letGo() {
+      if (!bottle.value) return;
+      var id = bottle.value.id;
+      if (!bottle.value.fromCloud) releaseBottle(id);
+      toast("ok", "谢谢你接住了这份心事，瓶子已随风而去 🕊️");
+      fetchOne(id);
     }
     onMounted(function () { fetchOne(); });
     var warmth = computed(function () { return warmthScore(composer.value); });
@@ -1760,6 +2076,9 @@ var CatchView = {
       warmth: warmth, isMine: isMine, hugged: hugged, moodMeta: moodMeta,
       typed: typed, typing: typing, skipTyping: skipTyping, glowColor: glowColor, likesCount: likesCount, warmed: warmed,
       warmHearts: warmHearts, sendWarmth: sendWarmth, moodColorOf: moodColorOf,
+      zone: zone, fateMode: fateMode, myMoodColor: myMoodColor, calmOpen: calmOpen, setZone: setZone, enterDeep: enterDeep, setMyMood: setMyMood, setFate: setFate,
+      treeholeOpen: treeholeOpen, treeholeLoading: treeholeLoading, treeholeText: treeholeText, openTreeHole: openTreeHole, useTreeHole: useTreeHole, letGo: letGo,
+      moodColors: MOOD_COLORS, deepCost: ENERGY_RULES.deep, myEnergy: computed(function () { return dbMe().energy || 0; }),
       fetchOne: fetchOne, submitReply: submitReply, openAi: openAi, pickStyle: pickStyle, like: like, hug: hug, confirmReport: confirmReport,
       warm: warm, liked: liked, reported: reported,
       styles: REPLY_STYLES, styleKeys: STYLE_KEYS, timeAgo: timeAgo, glassBottleSvg: glassBottleSvg, miniBottleSvg: miniBottleSvg, ic: ic, spinner: spinner, go: go,
@@ -1785,6 +2104,22 @@ var CatchView = {
     <div><h1 class="catch-title">捞到一个瓶子</h1><p class="catch-sub">来自一位匿名的心事主人 · {{ timeAgo(bottle.createdAt) }}</p></div>\
     <button class="btn btn-ghost" style="padding:8px 16px;font-size:12px" @click="fetchOne(bottle.id)"><span v-html="ic(\'refresh\', \'ic-s\')"></span>换一个</button>\
   </header>\
+  <div class="glass card-soft" style="border-radius:20px;padding:14px 16px;margin-bottom:16px">\
+    <div class="chips" role="group" aria-label="选择海区" style="margin-bottom:10px">\
+      <button class="pill pill-sea" :class="{ sel: zone === 0 }" :aria-pressed="zone === 0" @click="setZone(0)">🐚 浅滩</button>\
+      <button class="pill pill-dusk" :class="{ sel: zone === 1 }" :aria-pressed="zone === 1" @click="setZone(1)">🌊 深海 · {{ deepCost }} 勇气</button>\
+    </div>\
+    <div class="chips" role="group" aria-label="缘分模式" style="margin-bottom:10px">\
+      <button class="pill" :class="{ sel: fateMode === \'random\' }" :aria-pressed="fateMode === \'random\'" @click="setFate(\'random\')">🎲 随缘</button>\
+      <button class="pill" :class="{ sel: fateMode === \'same\' }" :aria-pressed="fateMode === \'same\'" @click="setFate(\'same\')">🫧 同频共振</button>\
+      <button class="pill" :class="{ sel: fateMode === \'complement\' }" :aria-pressed="fateMode === \'complement\'" @click="setFate(\'complement\')">☀️ 互补治愈</button>\
+    </div>\
+    <div v-if="fateMode !== \'random\'" class="anim-fade-up" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">\
+      <span style="font-size:11px;color:var(--ink-soft)">我的心情：</span>\
+      <button v-for="c in moodColors" :key="c.hex" class="swatch" style="width:26px;height:26px" :class="{ sel: myMoodColor === c.hex }" :style="{ background: c.hex, color: c.hex }" :aria-label="c.name" :title="c.name" @click="setMyMood(c.hex)"></button>\
+      <span style="font-size:11px;color:var(--ink-faint)">{{ fateMode === \'same\' ? \'捞和你同频的心事\' : \'捞能治愈你的心事\' }}</span>\
+    </div>\
+  </div>\
   <div class="letter-card card-soft" :style="{ boxShadow: \'0 0 0 2px \' + glowColor + \'45, 0 22px 60px \' + glowColor + \'30\' }">\
     <div class="letter-top">\
       <span class="letter-author"><span v-html="miniBottleSvg(bottle.skin, glowColor)" style="width:24px"></span>匿名漂流者</span>\
@@ -1793,6 +2128,38 @@ var CatchView = {
     <div class="letter-body">\
       <p class="letter-content" @click="skipTyping" :title="typing ? \'点击展开全文\' : \'\'">{{ typed }}<span v-if="typing" class="caret" aria-hidden="true"></span></p>\
       <p v-if="typing" style="margin-top:10px;font-size:11px;color:var(--ink-faint)">信纸正在展开… 点一下可立即读完</p>\
+      <div v-if="bottle.doodle" class="anim-fade-up" style="margin-top:14px">\
+        <p style="font-size:11px;color:var(--ink-soft);margin-bottom:8px">🎨 TA 还画了一幅灵魂涂鸦：</p>\
+        <img :src="bottle.doodle" alt="瓶主的涂鸦" style="width:100%;max-width:340px;border-radius:16px;border:2px solid var(--sea-200);background:#fffaf2" />\
+      </div>\
+    </div>\
+    <div style="padding:0 20px 18px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">\
+      <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px" @click="openTreeHole"><span v-html="ic(\'sparkle\', \'ic-s\')"></span>AI 树洞解读</button>\
+      <button class="btn btn-ghost" style="padding:7px 14px;font-size:12px;color:var(--blush-500)" @click="letGo">🕊️ 已释怀，让它随风而去</button>\
+    </div>\
+  </div>\
+  <div v-if="treeholeOpen" class="treehole-card anim-fade-up">\
+    <p class="th-label"><span v-html="ic(\'sparkle\', \'ic-s\')"></span>🌳 树洞的回声 · 每个心事都值得被听见</p>\
+    <template v-if="treeholeLoading"><div class="shimmer" style="height:72px;border-radius:14px;margin-top:12px" aria-hidden="true"></div></template>\
+    <p v-else class="th-body">{{ treeholeText }}</p>\
+    <div v-if="!treeholeLoading" class="th-actions">\
+      <button class="btn btn-ghost" style="padding:6px 14px;font-size:12px" @click="treeholeOpen = false">收起</button>\
+      <button class="btn btn-sea" style="padding:6px 14px;font-size:12px" @click="useTreeHole">用这段去回复 TA</button>\
+    </div>\
+  </div>\
+  <div v-if="calmOpen" class="overlay">\
+    <button class="bg anim-backdrop-in" aria-label="关闭" @click="calmOpen = false" style="position:absolute;inset:0;background:rgba(20,40,70,.6);backdrop-filter:blur(4px);cursor:default"></button>\
+    <div class="dialog anim-modal-in" role="dialog" aria-modal="true" aria-label="潜入深海前" style="max-width:400px;background:linear-gradient(170deg,#eaf2fb,#dde8f7)">\
+      <div class="dialog-body" style="text-align:center;padding:26px 24px">\
+        <span style="font-size:38px" aria-hidden="true">🌊</span>\
+        <h3 class="font-display" style="font-size:18px;color:var(--ink-deep);margin-top:10px">深海里的心事，更重一些</h3>\
+        <p style="margin-top:10px;font-size:13px;line-height:1.8;color:var(--ink)">那里沉着更久的困惑、更深的秘密。<br/>下潜之前，先跟着海浪呼吸三次——<br/>吸气……呼气……你已经很勇敢了。</p>\
+        <p style="margin-top:8px;font-size:12px;color:var(--ink-soft)">潜入将消耗 {{ deepCost }} 点勇气（当前 {{ myEnergy }} 点）</p>\
+        <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px">\
+          <button class="btn btn-sea" style="justify-content:center;padding:12px" @click="enterDeep">🤿 我已平复，潜入深海</button>\
+          <button class="btn btn-ghost" style="justify-content:center" @click="calmOpen = false">再想想</button>\
+        </div>\
+      </div>\
     </div>\
   </div>\
   <div class="warmth-bar glass card-soft">\
