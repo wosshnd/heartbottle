@@ -1180,24 +1180,32 @@ async function throwBottle(content, drawing) {
     drawing: drawing ? (drawing.substring(0, 50) + '...') : '(无涂鸦)'
   });
 
-  // 3) 表名严格 'bottles'；插入后直接返回结果，不链式调用 .select()
-  var result = await sb.from("bottles").insert(data);
+  // 3) 调用后端 API 中转（保护 Supabase Key）
+  try {
+    const response = await fetch('/api/bottle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'throw',
+        content: content,
+        mood: 'neutral',
+        drawing: drawing || null
+      })
+    });
 
-  // 4) insert 不会抛异常，数据库错误放在 result.error 里，需要手动检查
-  if (result.error) {
-    console.error('Supabase 报错详情:', result.error);
+    const result = await response.json();
 
-    // 5) 兜底：drawing 列不存在导致 400 时，降级为只写 content 重试
-    var msg = String(result.error.message || "");
-    if (drawing && (result.error.code === "42703" || msg.indexOf("drawing") >= 0)) {
-      console.warn('⚠️ 数据库还没有 drawing 列，涂鸦本次未同步。请执行：alter table public.bottles add column if not exists drawing text;');
-      var retry = await sb.from("bottles").insert({ content: content });
-      if (retry.error) { console.error('Supabase 报错详情:', retry.error); throw retry.error; }
-      return retry;
+    if (!response.ok || !result.success) {
+      throw new Error(result.details || result.error || 'Throw failed');
     }
-    throw result.error;
+
+    console.log('抛瓶成功:', result.data);
+    return { data: result.data, error: null };
+
+  } catch (error) {
+    console.error('API 报错详情:', error);
+    throw error;
   }
-  return result;
 }
 
 /**
@@ -1217,34 +1225,30 @@ async function likeCloudBottle(id, likes) {
 }
 
 /**
- * 捞瓶子：从 bottles 表随机取一条
- * 原理：先统计总行数 → 生成随机偏移量 → 只取该偏移处的那一行（全程只传一条数据，省流量）
- * 查询一律使用 select("*")，对表里有哪些列完全不敏感，避免因缺列而 400
+ * 捞瓶子：通过后端 API 随机取一条
  * @returns {Promise<object|null>} 瓶子对象（读 .content 即内容）；空海时返回 null
  */
 async function getRandomBottle() {
   try {
-    // 第 1 步：head 请求只取行数，不下载数据
-    var { count, error: countError } = await sb
-      .from("bottles")
-      .select("*", { count: "exact", head: true });
-    if (countError) throw countError;
-    if (!count) return null;                        // 海里一个瓶子也没有
+    // 调用后端 API 获取随机瓶子
+    const response = await fetch('/api/bottle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'fetch'
+      })
+    });
 
-    // 第 2 步：在 [0, count-1] 里随机一个偏移
-    var offset = Math.floor(Math.random() * count);
+    const result = await response.json();
 
-    // 第 3 步：range(offset, offset) = 只取第 offset 行；maybeSingle 在 0 条时返回 null 而不报错
-    var { data, error } = await sb
-      .from("bottles")
-      .select("*")
-      .range(offset, offset)
-      .maybeSingle();
-    if (error) throw error;
-    return data;                                    // 用 data.content 读瓶子内容
+    if (!response.ok || !result.success) {
+      throw new Error(result.details || result.error || 'Fetch failed');
+    }
+
+    return result.data; // 返回瓶子数据，null 表示海里没有瓶子
+
   } catch (err) {
-    // catch 时打印完整错误对象
-    console.error('Supabase 报错详情:', err);
+    console.error('API 报错详情:', err);
     throw err;
   }
 }
