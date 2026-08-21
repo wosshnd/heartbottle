@@ -1014,6 +1014,10 @@ function weeklyQuote(stats) {
        content     text not null                          -- 瓶中信内容
      );
 
+     -- 可选列（缺了会自动降级，不影响抛/捞，加上后体验更完整）：
+     alter table public.bottles add column if not exists drawing  text;              -- 灵魂涂鸦 Base64
+     alter table public.bottles add column if not exists released boolean default false;  -- 阅后即焚软删除
+
      -- 若已按最小表建好，可跳过下面两行；RLS 已关闭时也不需要建 policy
      alter table public.bottles enable row level security;   -- 可选
      create policy "allow anon all" on public.bottles for all using (true);  -- 可选
@@ -1286,6 +1290,40 @@ function releaseBottle(bottleId) {
   var i = db.bottles.findIndex(function (b) { return b.id === bottleId; });
   if (i >= 0) { db.bottles.splice(i, 1); dbSave(); return true; }
   return false;
+}
+
+/* ------------- 🕊️ 已释怀黑名单：保证「随风而去」的瓶子不再出现 ------------- */
+var RELEASED_KEY = "xlpb.released.v1";
+var releasedColMissing = false;   // 云端 released 列不存在时置 true，避免反复试探
+function loadReleased() {
+  try { return JSON.parse(localStorage.getItem(RELEASED_KEY)) || []; } catch (e) { return []; }
+}
+/* 记录一只被释怀的瓶子：云端 id + 内容指纹双保险（表里没 id 列也能拦住） */
+function markReleased(b) {
+  if (!b) return;
+  var list = loadReleased();
+  if (b.cloudId && list.indexOf("id:" + b.cloudId) < 0) list.push("id:" + b.cloudId);
+  var fp = "c:" + String(b.content || "").slice(0, 40);
+  if (list.indexOf(fp) < 0) list.push(fp);
+  try { localStorage.setItem(RELEASED_KEY, JSON.stringify(list.slice(-300))); } catch (e) {}
+}
+/* 判断一只瓶子是否已被释怀 */
+function isReleased(b) {
+  if (!b) return false;
+  var list = loadReleased();
+  if (b.cloudId && list.indexOf("id:" + b.cloudId) >= 0) return true;
+  return list.indexOf("c:" + String(b.content || "").slice(0, 40)) >= 0;
+}
+/* 云端软删除：标记 released = true（需要表里有 released 列，见文件头部 SQL）。
+   列不存在时静默降级，由本地黑名单兜底，捞瓶逻辑不受影响。 */
+function releaseCloudBottle(id) {
+  if (!sb || !id || releasedColMissing) return;
+  sb.from("bottles").update({ released: true }).eq("id", id).then(function (res) {
+    if (res.error) {
+      console.warn("云端 released 列不可用，已改用本地黑名单。如需对所有用户生效，请执行：alter table public.bottles add column if not exists released boolean default false;", res.error.message);
+      releasedColMissing = true;
+    }
+  });
 }
 function toggleHug(bottleId) {
   var b = getBottle(bottleId); var id = dbMe().id;
@@ -2071,14 +2109,20 @@ var CatchView = {
         if (!usedInitial && props.initialBottleId) {
           b = getBottle(props.initialBottleId) || null;          // 从通知点进来的指定瓶子
         } else {
-          /* 本地海区：先按深浅海分区，再按缘分模式加权挑选 */
-          var pool = localPool(zone.value).filter(function (x) { return x.id !== excludeId; });
+          /* 本地海区：先按深浅海分区，再按缘分模式加权挑选（跳过已释怀的瓶子） */
+          var pool = localPool(zone.value).filter(function (x) { return x.id !== excludeId && !isReleased(x); });
           b = fatePick(pool, fateMode.value, myMoodColor.value);
           /* 浅滩 + 随缘时，混入云端共享海的瓶子，让"共同的大海"一直在 */
           if (zone.value === 0 && sb) {
             try {
-              var row = await getRandomBottle();
-              var cb = row ? cloudToLocal(row) : null;
+              var cb = null;
+              /* 🕊️ 最多尝试 6 次，跳过已释怀的瓶子，避免「随风而去」的瓶子又漂回来 */
+              for (var attempt = 0; attempt < 6 && !cb; attempt++) {
+                var row = await getRandomBottle();
+                var cand = row ? cloudToLocal(row) : null;
+                if (!cand) break;                  // 空海，无需再试
+                if (!isReleased(cand)) cb = cand;  // 未释怀 → 采用
+              }
               if (cb) {
                 if (!b) b = cb;
                 else if (fateMode.value === "random" && Math.random() < 0.5) b = cb;
@@ -2137,10 +2181,12 @@ var CatchView = {
     /* 🕊️ 阅后即焚：接住这份心事，让瓶子随风而去 */
     function letGo() {
       if (!bottle.value) return;
-      var id = bottle.value.id;
-      if (!bottle.value.fromCloud) releaseBottle(id);
+      var b = bottle.value;
+      markReleased(b);                              // ① 本地黑名单：双保险，立刻生效
+      if (!b.fromCloud) releaseBottle(b.id);        // ② 本地瓶：直接从海里移除
+      else if (b.cloudId) releaseCloudBottle(b.cloudId);  // ③ 云端瓶：软删除 released 列（缺列时自动降级）
       toast("ok", "谢谢你接住了这份心事，瓶子已随风而去 🕊️");
-      fetchOne(id);
+      fetchOne(b.id);
     }
     onMounted(function () { fetchOne(); });
     var warmth = computed(function () { return warmthScore(composer.value); });
