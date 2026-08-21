@@ -1036,21 +1036,26 @@ var sb = (window.supabase && window.supabase.createClient)
   ? window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key)
   : null;
 
-/**
- * 抛瓶子：向 bottles 表插入一条数据
- * ------------------------------------------------------------------
- * 按需求严格简化：
- *   · 表名严格使用 'bottles'
- *   · 插入字段严格只有 content（多发一个表里不存在的列就会 400）
- *   · 不链式调用 .select()，插入后直接返回结果
- *   · 插入前 console.log 数据形状；catch 时打印完整 error 对象
- *
- * @param {string} content 瓶中信内容
- * @returns {Promise<*>} insert 的直接返回值。注意：不链 .select() 时，
- *                       v2 成功插入返回的是 minimal 响应（data 为 null、HTTP 201），
- *                       这是正常现象——数据已经写进数据库了。
- * @throws  插入失败（400 / 断网等）时抛出原始 error 对象，由调用方决定降级策略
- */
+/** 涂鸦瘦身：Base64 超过约 400KB 时转成 JPEG（画布本身有底色，视觉几乎无损），避免上传 payload 过大 */
+function shrinkDoodle(dataUrl) {
+  return new Promise(function (resolve) {
+    if (!dataUrl || dataUrl.length < 400000) { resolve(dataUrl); return; }
+    var img = new Image();
+    img.onload = function () {
+      try {
+        var c = document.createElement("canvas");
+        c.width = img.width; c.height = img.height;
+        c.getContext("2d").drawImage(img, 0, 0);
+        var small = c.toDataURL("image/jpeg", 0.82);
+        console.log("涂鸦已压缩:", Math.round(dataUrl.length / 1024) + "KB → " + Math.round(small.length / 1024) + "KB");
+        resolve(small);
+      } catch (e) { resolve(dataUrl); }
+    };
+    img.onerror = function () { resolve(dataUrl); };
+    img.src = dataUrl;
+  });
+}
+
 /**
  * 抛瓶子：向 bottles 表插入一条数据（文字 + 灵魂涂鸦）
  * ------------------------------------------------------------------
@@ -1086,6 +1091,7 @@ async function throwBottle(content, drawing) {
     var msg = String(result.error.message || "");
     if (drawing && (result.error.code === "42703" || msg.indexOf("drawing") >= 0)) {
       console.warn('⚠️ 数据库还没有 drawing 列，涂鸦本次未同步。请执行：alter table public.bottles add column if not exists drawing text;');
+      if (typeof toast === "function") toast("warn", "涂鸦暂未同步到云端：数据库缺 drawing 列（详见控制台）");
       var retry = await sb.from("bottles").insert({ content: content });
       if (retry.error) { console.error('Supabase 报错详情:', retry.error); throw retry.error; }
       return retry;
@@ -1273,7 +1279,8 @@ function createBottle(input) {
         注意：云端同步 content + drawing 两个字段（见 throwBottle 注释）；
         drawing 列未建好时会自动降级为只写 content。 */
   if (sb && input.target === "ocean" && !input.sealedUntil) {
-    throwBottle(input.content, input.doodle)
+    shrinkDoodle(input.doodle)
+      .then(function (d) { return throwBottle(input.content, d); })
       .then(function () { store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步"; })
       .catch(function (err) {
         // ☁️ 云端同步失败的兜底处理：本地瓶子不受影响，页脚切回离线模式
@@ -2062,6 +2069,8 @@ var CatchView = {
     var treeholeOpen = ref(false), treeholeLoading = ref(false), treeholeText = ref("");
     /* ❤️ 送出温暖：爱心飘浮 + 云端 likes 回写 */
     var warmHearts = ref([]), cloudLiked = ref(false);
+    /* 🎨 涂鸦大图查看 */
+    var doodleView = ref(null);
     function burstHearts() {
       var batch = [];
       for (var k = 0; k < 8; k++) batch.push({ id: Date.now() + k + Math.floor(Math.random() * 999), x: Math.random() * 60 - 30, delay: Math.random() * 0.3, size: 14 + Math.random() * 12, hue: Math.random() > 0.5 ? "rose" : "warm" });
@@ -2101,7 +2110,7 @@ var CatchView = {
     }
     function fetchOne(excludeId) {
       phase.value = "fetching"; composer.value = ""; chosenStyle.value = null; aiOpen.value = false; aiReplies.value = null;
-      cloudLiked.value = false; warmHearts.value = []; typed.value = ""; typing.value = false;
+      cloudLiked.value = false; warmHearts.value = []; typed.value = ""; typing.value = false; doodleView.value = null;
       treeholeOpen.value = false; treeholeText.value = "";
       if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
       setTimeout(async function () {
@@ -2256,7 +2265,7 @@ var CatchView = {
       sending: sending, care: care, reportTarget: reportTarget, hearts: hearts, shake: shake,
       warmth: warmth, isMine: isMine, hugged: hugged, moodMeta: moodMeta,
       typed: typed, typing: typing, skipTyping: skipTyping, glowColor: glowColor, likesCount: likesCount, warmed: warmed,
-      warmHearts: warmHearts, sendWarmth: sendWarmth, moodColorOf: moodColorOf,
+      warmHearts: warmHearts, sendWarmth: sendWarmth, moodColorOf: moodColorOf, doodleView: doodleView,
       zone: zone, fateMode: fateMode, myMoodColor: myMoodColor, calmOpen: calmOpen, setZone: setZone, enterDeep: enterDeep, setMyMood: setMyMood, setFate: setFate,
       treeholeOpen: treeholeOpen, treeholeLoading: treeholeLoading, treeholeText: treeholeText, openTreeHole: openTreeHole, useTreeHole: useTreeHole, letGo: letGo,
       moodColors: MOOD_COLORS, deepCost: ENERGY_RULES.deep, myEnergy: computed(function () { return dbMe().energy || 0; }),
@@ -2310,8 +2319,8 @@ var CatchView = {
       <p class="letter-content" @click="skipTyping" :title="typing ? \'点击展开全文\' : \'\'">{{ typed }}<span v-if="typing" class="caret" aria-hidden="true"></span></p>\
       <p v-if="typing" style="margin-top:10px;font-size:11px;color:var(--ink-faint)">信纸正在展开… 点一下可立即读完</p>\
       <div v-if="bottle.doodle" class="anim-fade-up" style="margin-top:14px">\
-        <p style="font-size:11px;color:var(--ink-soft);margin-bottom:8px">🎨 TA 还画了一幅灵魂涂鸦：</p>\
-        <img :src="bottle.doodle" alt="瓶主的涂鸦" style="width:100%;max-width:340px;border-radius:16px;border:2px solid var(--sea-200);background:#fffaf2" />\
+        <p style="font-size:11px;color:var(--ink-soft);margin-bottom:8px">🎨 TA 还画了一幅灵魂涂鸦 · 点一下看大图</p>\
+        <img :src="bottle.doodle" alt="瓶主的涂鸦" class="doodle-view" @click="doodleView = bottle.doodle" />\
       </div>\
     </div>\
     <div style="padding:0 20px 18px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">\
