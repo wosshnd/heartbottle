@@ -30,11 +30,34 @@
 .theme-night{--sky1:#26345c;--sky2:#1c2747;--sky3:#16203a;--sea-a:#33517f;--sea-b:#1e3460;--glow:rgba(230,235,255,.85);--star-op:1}
 
 /* ...（文件中间内容保持不变）... */
+
+/* 新增：今日心情天气横幅与旋转海边寄语 */
+.sea-banner{position:absolute;left:50%;transform:translateX(-50%);top:18vh;z-index:22;max-width:720px;width:calc(100% - 32px);background:rgba(255,255,255,0.82);backdrop-filter:blur(6px);border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 8px 20px rgba(20,40,80,.08)}
+.sea-banner .mood-rotator{flex:1;font-size:14px;color:var(--ink-deep);font-weight:500}
+.sea-banner .energy{font-size:13px;color:var(--sea-700);background:linear-gradient(90deg,#fff,#f7f9ff);padding:6px 10px;border-radius:999px;border:1px solid rgba(107,155,216,.12)}
+.sea-banner .my-space-link{font-size:13px;color:var(--sea-600);text-decoration:none;font-weight:600}
+
+/* 为避免遮挡海面：在较窄视口下把页面主要内容整体下移一点（仅作保护性下移，不会过度影响结构） */
+@media(min-width:320px){
+  #app{padding-top:22vh}
+}
+@media(min-width:768px){
+  #app{padding-top:16vh}
+}
+
 </style>
 </head>
 <body>
 <canvas id="sea-bg" aria-hidden="true"></canvas>
 <div id="app"></div>
+
+<!-- 今日心情天气横幅（每 6s 换一句海边的话） -->
+<div class="sea-banner" role="region" aria-label="今日心情与海边寄语">
+  <div class="mood-rotator" id="moodRotator">今日心情天气：晴朗 · 海风柔和，海边的话：愿你在浪声里找到一个可以喘息的地方。</div>
+  <div class="energy">心灵能量 <strong id="energyVal">87</strong></div>
+  <a class="my-space-link" href="/me">去「我的空间」看勋章与周报</a>
+</div>
+
 <!-- Supabase JS v2（UMD 全局版，挂载到 window.supabase） -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
@@ -111,6 +134,32 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btn) btn.disabled = false;
     }
   });
+
+  // 启动海边寄语轮播（每 6 秒切换）
+  const messages = [
+    '海风柔和，愿你把沉重放下，像贝壳被潮水拾起。',
+    '浪花会退去，也会再来，愿你的心能温柔地被看见。',
+    '把心事放进瓶子，让它慢慢漂向下一处温柔。',
+    '今天的你已经很了不起，哪怕只是坚持呼吸。',
+    '在海边的光里，给自己一点善意的空间。'
+  ];
+  const rotator = document.getElementById('moodRotator');
+  const energyEl = document.getElementById('energyVal');
+  if (rotator) {
+    let idx = 0;
+    function tick() {
+      const moodText = '今日心情天气：晴朗 · 海边的话：' + messages[idx];
+      rotator.textContent = moodText;
+      idx = (idx + 1) % messages.length;
+    }
+    tick();
+    setInterval(tick, 6000);
+  }
+  // 能量值可从应用状态读取；当前写死为 87（如需动态替换，请把真实数据写入 localStorage/session 并读取）
+  if (energyEl) {
+    const energy = window.localStorage.getItem('hb_energy') || '87';
+    energyEl.textContent = energy;
+  }
 });
 </script>
 </body>
