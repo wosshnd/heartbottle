@@ -472,9 +472,56 @@ img,svg{display:block}
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
 }
+
+/* ============ v3 美化与玩法增强 ============ */
+body{line-height:1.6}
+.font-display{font-family:var(--font-display),"Noto Serif SC","Songti SC","SimSun",serif;font-weight:700;letter-spacing:.5px}
+
+/* 全局动态海洋画布（波浪 + 气泡），铺在页面背景层 */
+#sea-bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+#app{position:relative;z-index:1}
+
+/* 玻璃拟态：漂在海面上的冰块 */
+.glass{background:rgba(255,255,255,.42)!important;backdrop-filter:blur(14px) saturate(1.35);-webkit-backdrop-filter:blur(14px) saturate(1.35);border:1px solid rgba(255,255,255,.7);box-shadow:0 12px 34px rgba(61,101,158,.14),inset 0 1px 0 rgba(255,255,255,.8)}
+
+/* 主按钮：流光 + 悬停放大 + 按下凹陷 */
+.cta{position:relative;overflow:hidden}
+.cta::after{content:"";position:absolute;top:-20%;left:-70%;width:45%;height:140%;background:linear-gradient(105deg,transparent 20%,rgba(255,255,255,.6) 50%,transparent 80%);transform:skewX(-20deg);transition:left .7s ease}
+.cta:hover::after{left:135%}
+.cta:hover{transform:translateY(-3px) scale(1.035)}
+.cta:active{transform:translateY(1px) scale(.965);box-shadow:0 6px 16px rgba(30,50,90,.25)!important}
+
+/* 心情瓶色选择器 */
+.swatch-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:10px}
+.swatch{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.85);box-shadow:0 3px 10px rgba(40,60,100,.22);transition:transform .18s,box-shadow .18s;position:relative}
+.swatch:hover{transform:scale(1.16)}
+.swatch.sel{transform:scale(1.22);box-shadow:0 0 0 3px var(--cream),0 0 0 5px currentColor,0 6px 16px rgba(40,60,100,.3)}
+.swatch-name{font-size:11px;color:var(--ink-soft);min-width:52px}
+
+/* 打字机光标 */
+.caret{display:inline-block;width:2px;height:1em;margin-left:2px;background:var(--sea-500);vertical-align:-2px;animation:caretBlink .9s steps(2) infinite}
+@keyframes caretBlink{50%{opacity:0}}
+
+/* 「送出温暖」大按钮 */
+.warmth-bar{margin-top:14px;position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:20px;padding:14px 18px}
+.warmth-btn{display:inline-flex;align-items:center;gap:8px;border-radius:999px;background:linear-gradient(120deg,var(--blush-400),var(--coral-400));color:#fff;padding:10px 22px;font-size:14px;font-weight:500;box-shadow:0 8px 22px rgba(234,156,178,.45);transition:transform .15s,box-shadow .2s;position:relative}
+.warmth-btn:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 12px 28px rgba(234,156,178,.6)}
+.warmth-btn:active{transform:translateY(1px) scale(.95)}
+.warmth-btn.on{background:linear-gradient(120deg,var(--coral-500),var(--blush-500))}
+.warmth-count{font-size:12px;color:var(--ink-soft)}
+.warmth-count b{color:var(--blush-500);font-size:15px}
+
+/* 我的足迹 */
+.fab-traces{position:fixed;left:16px;bottom:86px;z-index:70;display:flex;align-items:center;gap:6px;border-radius:999px;background:rgba(255,255,255,.85);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.9);padding:10px 16px;font-size:12px;font-weight:500;color:var(--sea-600);box-shadow:0 8px 22px rgba(61,101,158,.25);transition:transform .18s,box-shadow .2s}
+.fab-traces:hover{transform:translateY(-2px) scale(1.05);box-shadow:0 12px 28px rgba(61,101,158,.35)}
+.fab-traces:active{transform:scale(.94)}
+.traces-item{border-radius:18px;background:var(--cream);padding:14px 16px;margin-bottom:10px;box-shadow:0 4px 14px rgba(49,64,95,.07)}
+.traces-item p{font-size:14px;line-height:1.7;color:var(--ink);margin-top:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.traces-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:10px;color:var(--ink-faint)}
 </style>
 </head>
 <body>
+<canvas id="sea-bg" aria-hidden="true"></canvas>
 <div id="app"></div>
 <!-- Supabase JS v2（UMD 全局版，挂载到 window.supabase） -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -487,7 +534,7 @@ img,svg{display:block}
    每个函数都对应未来的 Supabase 调用，迁移时只需替换实现。
    ===================================================================== */
 var _ = Vue;
-var ref = _.ref, reactive = _.reactive, computed = _.computed, onMounted = _.onMounted, watch = _.watch, nextTick = _.nextTick;
+var ref = _.ref, reactive = _.reactive, computed = _.computed, onMounted = _.onMounted, onUnmounted = _.onUnmounted, watch = _.watch, nextTick = _.nextTick;
 
 /* ---------------- 常量 ---------------- */
 var MOODS = {
@@ -612,6 +659,22 @@ var SKIN_COLORS = {
   "skin-amber": { paper: "#ffd9a8" },
   "skin-star": { paper: "#e6dcff", glow: "#b9a5f2" }
 };
+
+/* ---------------- 心情瓶色 ---------------- */
+/* 抛瓶时可选的 5 种心情颜色；hex 码会随瓶子一起存入数据库 mood_color 列 */
+var MOOD_COLORS = [
+  { name: "开心", hex: "#f0b95a" },
+  { name: "平静", hex: "#63a695" },
+  { name: "难过", hex: "#6b8cc7" },
+  { name: "烦躁", hex: "#e57f58" },
+  { name: "迷茫", hex: "#9b8ad0" }
+];
+/* 老瓶子没有 mood_color 时，按情绪标签推一个近似光晕色 */
+var MOOD_GLOW = { study: "#6b8cc7", exam: "#4f74b8", social: "#9b8ad0", family: "#d98ba6", self: "#63a695", other: "#8fa0bd" };
+function moodColorOf(b) {
+  if (!b) return "#8fb0dc";
+  return b.moodColor || MOOD_GLOW[b.mood] || "#8fb0dc";
+}
 var ENERGY_RULES = { throw: 5, catch: 2, reply: 8, like: 1, receiveLike: 2, hug: 1 };
 var ENERGY_LABELS = [[0, "刚醒来的小浪花"], [40, "会发光的贝壳"], [100, "温柔的信风"], [200, "海面上的灯塔"], [400, "整片暖流"]];
 function energyTitle(energy) {
@@ -708,21 +771,18 @@ function weeklyQuote(stats) {
    · 策略：云端优先、本地兜底 —— 网络可用时抛瓶写入云端、捞瓶从云端随机读取；
      断网或表未建好时自动退回 localStorage，页面永远不会白屏
 
-   首次使用请先在 Supabase 控制台 SQL Editor 里执行以下建表语句：
+   首次使用请先在 Supabase 控制台 SQL Editor 里执行以下建表语句。
+   注意：代码插入时只写 content 一个字段（多余字段会导致 400 报错），
+   所以下表只保留必需列；id / created_at 由数据库自动生成：
 
      create table public.bottles (
        id          uuid primary key default gen_random_uuid(),
-       content     text        not null,                 -- 瓶中信内容
-       mood        text        default 'other',          -- 情绪标签
-       wants_reply boolean     default true,             -- 是否希望收到回信
-       sealed_until timestamptz,                         -- 时间胶囊开启时间（可空）
-       created_at  timestamptz default now()             -- 抛瓶时间
+       content     text not null                          -- 瓶中信内容
      );
 
-     -- 开启行级安全（RLS）并放行匿名读写（演示用，生产环境请收紧策略）
-     alter table public.bottles enable row level security;
-     create policy "allow anon read"   on public.bottles for select using (true);
-     create policy "allow anon insert" on public.bottles for insert with check (true);
+     -- 若已按最小表建好，可跳过下面两行；RLS 已关闭时也不需要建 policy
+     alter table public.bottles enable row level security;   -- 可选
+     create policy "allow anon all" on public.bottles for all using (true);  -- 可选
    ===================================================================== */
 
 /** Supabase 项目配置 —— 换项目时只需改这里 */
@@ -740,73 +800,119 @@ var sb = (window.supabase && window.supabase.createClient)
 
 /**
  * 抛瓶子：向 bottles 表插入一条数据
+ * ------------------------------------------------------------------
+ * 按需求严格简化：
+ *   · 表名严格使用 'bottles'
+ *   · 插入字段严格只有 content（多发一个表里不存在的列就会 400）
+ *   · 不链式调用 .select()，插入后直接返回结果
+ *   · 插入前 console.log 数据形状；catch 时打印完整 error 对象
+ *
  * @param {string} content 瓶中信内容
- * @param {object} [extra] 可选字段：{ mood, wants_reply, sealed_until }
- * @returns {Promise<object>} 插入成功后返回数据库里那一行（含服务端生成的 id / created_at）
- * @throws  插入失败（如 RLS 拒绝、断网）时抛出 Error，由调用方决定降级策略
+ * @returns {Promise<*>} insert 的直接返回值。注意：不链 .select() 时，
+ *                       v2 成功插入返回的是 minimal 响应（data 为 null、HTTP 201），
+ *                       这是正常现象——数据已经写进数据库了。
+ * @throws  插入失败（400 / 断网等）时抛出原始 error 对象，由调用方决定降级策略
  */
 async function throwBottle(content, extra) {
   extra = extra || {};
-  var { data, error } = await sb
-    .from("bottles")
-    .insert({
-      content: content,                     // 必填：瓶子内容
-      mood: extra.mood || "other",          // 情绪标签
-      wants_reply: extra.wants_reply !== false,
-      sealed_until: extra.sealed_until || null
-    })
-    .select()      // v2 默认返回 minimal，加 select() 才能拿回刚插入的行
-    .single();     // 只插入了一条，所以取单行
+  /* 1) 自适应组装插入数据：
+        优先写 { content, mood_color }（心情瓶色，需要表里有 mood_color 列）；
+        若 mood_color 列不存在导致 400，自动降级为只写 { content }，
+        保证无论表结构如何都能抛瓶成功。 */
+  var full = { content: content };
+  if (extra.mood_color) full.mood_color = extra.mood_color;
 
-  if (error) {
-    // 📋 打印完整错误对象（含 code / message / details / hint），方便在控制台定位
-    //    常见 code：42P01 = 表不存在；PGRST204/42703 = 列名不匹配；42501 = 权限不足
-    console.error('Supabase 报错详情:', error);
-    throw new Error("抛瓶失败：" + error.message);
+  // 2) 插入前打印，方便在控制台确认数据长什么样
+  console.log('准备插入的数据:', full);
+
+  try {
+    // 3) 表名严格 'bottles'；插入后直接拿结果，不链式调用 .select()
+    var { error } = await sb.from("bottles").insert(full);
+    if (error) throw error;   // error 不为 null 就抛出，交给 catch 统一打印
+    return true;
+  } catch (err) {
+    // 4) catch 错误时，打印完整的 error 对象（含 code / message / details / hint）
+    console.error('Supabase 报错详情:', err);
+    if (extra.mood_color) {
+      // 5) 降级重试：只插 content（mood_color 列还没加到表里时走这条路）
+      var plain = { content: content };
+      console.log('降级为最小字段重新插入:', plain);
+      try {
+        var retry = await sb.from("bottles").insert(plain);
+        if (retry.error) throw retry.error;
+        return true;
+      } catch (err2) {
+        console.error('Supabase 报错详情:', err2);
+        throw err2;
+      }
+    }
+    throw err;
   }
-  return data;     // { id, content, mood, wants_reply, sealed_until, created_at }
+}
+
+/**
+ * 温暖点赞：把某只云端瓶子的 likes 更新为新值
+ * 前置条件：表里需要有 likes 列（int，默认 0）：
+ *   alter table public.bottles add column if not exists likes int default 0;
+ */
+async function likeCloudBottle(id, likes) {
+  console.log('准备更新 likes:', { id: id, likes: likes });
+  try {
+    var { error } = await sb.from("bottles").update({ likes: likes }).eq("id", id);
+    if (error) throw error;
+  } catch (err) {
+    console.error('Supabase 报错详情:', err);
+    throw err;
+  }
 }
 
 /**
  * 捞瓶子：从 bottles 表随机取一条
  * 原理：先统计总行数 → 生成随机偏移量 → 只取该偏移处的那一行（全程只传一条数据，省流量）
+ * 查询一律使用 select("*")，对表里有哪些列完全不敏感，避免因缺列而 400
  * @returns {Promise<object|null>} 瓶子对象（读 .content 即内容）；空海时返回 null
  */
 async function getRandomBottle() {
-  // 第 1 步：head 请求只取行数，不下载数据
-  var { count, error: countError } = await sb
-    .from("bottles")
-    .select("*", { count: "exact", head: true });
-  if (countError) {
-    console.error('Supabase 报错详情:', countError);
-    throw new Error("统计瓶子数失败：" + countError.message);
-  }
-  if (!count) return null;                          // 海里一个瓶子也没有
+  try {
+    // 第 1 步：head 请求只取行数，不下载数据
+    var { count, error: countError } = await sb
+      .from("bottles")
+      .select("*", { count: "exact", head: true });
+    if (countError) throw countError;
+    if (!count) return null;                        // 海里一个瓶子也没有
 
-  // 第 2 步：在 [0, count-1] 里随机一个偏移
-  var offset = Math.floor(Math.random() * count);
+    // 第 2 步：在 [0, count-1] 里随机一个偏移
+    var offset = Math.floor(Math.random() * count);
 
-  // 第 3 步：range(offset, offset) 表示「从第 offset 行取到第 offset 行」，即只要这一条
-  var { data, error } = await sb
-    .from("bottles")
-    .select("id, content, mood, wants_reply, created_at")
-    .range(offset, offset)
-    .maybeSingle();                                 // 0 条返回 null 而不报错
-  if (error) {
-    console.error('Supabase 报错详情:', error);
-    throw new Error("捞瓶失败：" + error.message);
+    // 第 3 步：range(offset, offset) = 只取第 offset 行；maybeSingle 在 0 条时返回 null 而不报错
+    var { data, error } = await sb
+      .from("bottles")
+      .select("*")
+      .range(offset, offset)
+      .maybeSingle();
+    if (error) throw error;
+    return data;                                    // 用 data.content 读瓶子内容
+  } catch (err) {
+    // catch 时打印完整错误对象
+    console.error('Supabase 报错详情:', err);
+    throw err;
   }
-  return data;
 }
 
 /** 把云端行映射成本地瓶子结构，让现有 UI（信纸卡片、抱抱、回复）无需改动即可渲染 */
 function cloudToLocal(row) {
   if (!row) return null;
+  // 表里没有 id 列时退化为随机后缀，避免所有云端瓶都叫 "cloud-undefined" 互相顶掉
+  var rid = (row.id != null) ? row.id : ("anon-" + Math.random().toString(36).slice(2, 9));
   return {
-    id: "cloud-" + row.id,
+    id: "cloud-" + rid,
+    cloudId: row.id != null ? row.id : null,        // 数据库原始 id，用于回写 likes
+    fromCloud: true,
     authorId: "cloud-anon",
     content: row.content,
-    mood: MOODS[row.mood] ? row.mood : "other",
+    mood: MOODS[row.mood] ? row.mood : "other",     // 缺列时按「其他」情绪渲染
+    moodColor: row.mood_color || null,              // ☁️ 心情瓶色（mood_color 列）
+    likes: row.likes || 0,                          // ☁️ 温暖点赞数（likes 列）
     skin: "skin-default",
     hugs: 0,
     huggedBy: [],
@@ -822,10 +928,12 @@ function cloudToLocal(row) {
 async function cloudPing() {
   if (!sb) { store.cloudMode = "本地模式（未加载云端 SDK）"; return; }
   try {
-    var { error } = await sb.from("bottles").select("id", { head: true, count: "exact" }).limit(1);
+    // 用 select("*") + head 探测：不依赖表里存在任何特定列（包括 id）
+    var { error } = await sb.from("bottles").select("*", { head: true }).limit(1);
     if (error) throw error;
     store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步";
   } catch (e) {
+    console.error('Supabase 报错详情:', e);
     store.cloudMode = "🐚 离线模式 · 仅本地存储";
   }
 }
@@ -895,15 +1003,16 @@ function catchRandom(excludeId) {
 }
 function createBottle(input) {
   var u = dbMe();
-  var bottle = { id: dbUid(), authorId: u.id, content: input.content, mood: input.mood, skin: u.skin, hugs: 0, huggedBy: [], wantsReply: input.wantsReply, target: input.target, sealedUntil: input.sealedUntil, openedNoticeSent: !input.sealedUntil, createdAt: nowIso() };
+  var bottle = { id: dbUid(), authorId: u.id, content: input.content, mood: input.mood, moodColor: input.moodColor || null, skin: u.skin, hugs: 0, huggedBy: [], wantsReply: input.wantsReply, target: input.target, sealedUntil: input.sealedUntil, openedNoticeSent: !input.sealedUntil, createdAt: nowIso() };
   dbLoad().bottles.push(bottle);
   dbAddEnergy(ENERGY_RULES.throw);
 
   /* ☁️ 云端同步：只有「立刻漂给陌生人」的普通瓶子才进海；
         时间胶囊（sealedUntil）要等开启后才该被捞到，故暂不上传。
+        mood_color 列不存在时 throwBottle 内部会自动降级为只写 content。
         同步失败不影响本地体验，仅更新页脚连接状态。 */
   if (sb && input.target === "ocean" && !input.sealedUntil) {
-    throwBottle(input.content, { mood: input.mood, wants_reply: input.wantsReply })
+    throwBottle(input.content, { mood_color: input.moodColor || null })
       .then(function () { store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步"; })
       .catch(function (err) {
         // ☁️ 云端同步失败的兜底处理：本地瓶子不受影响，页脚切回离线模式
@@ -1053,9 +1162,10 @@ function glassBottleSvg() {
     '<rect x="50" y="12" width="20" height="16" rx="3" fill="url(#corkGrad)"/><ellipse cx="60" cy="13" rx="10" ry="3" fill="#d9b386"/>' +
     '<path d="M45 78 C44 100 44 130 46 158" stroke="#ffffff" stroke-opacity="0.75" stroke-width="4" stroke-linecap="round" fill="none"/></svg>';
 }
-function miniBottleSvg(skin) {
+function miniBottleSvg(skin, glowHex) {
   var c = SKIN_COLORS[skin] || SKIN_COLORS["skin-default"];
-  var glow = c.glow ? '<ellipse cx="32" cy="52" rx="26" ry="34" fill="' + c.glow + '" opacity="0.35"/>' : '';
+  var glowColor = glowHex || c.glow;
+  var glow = glowColor ? '<ellipse cx="32" cy="52" rx="26" ry="34" fill="' + glowColor + '" opacity="0.35"/>' : '';
   return '<svg viewBox="0 0 64 96" style="width:100%;height:auto" aria-hidden="true">' + glow +
     '<path d="M27 16 L37 16 L37 27 C37 32 46 36 46 47 L46 78 C46 88 40 93 32 93 C24 93 18 88 18 78 L18 47 C18 36 27 32 27 27 Z" fill="#dcebff" fill-opacity="0.55" stroke="#8fb0dc" stroke-width="2"/>' +
     '<path d="M18 68 C24 65 30 69 32 67 C36 65 42 66 46 65 L46 78 C46 88 40 93 32 93 C24 93 18 88 18 78 Z" fill="#9cc4f0" opacity="0.5"/>' +
@@ -1074,7 +1184,8 @@ var store = reactive({
   catchInitial: null,
   catchKey: 0,
   unread: 0,
-  cloudMode: "☁️ 正在连接云端…"   // Supabase 连接状态，由 cloudPing() 更新
+  cloudMode: "☁️ 正在连接云端…",  // Supabase 连接状态，由 cloudPing() 更新
+  tracesOpen: false               // 「我的足迹」弹窗开关
 });
 var _toastId = 1;
 function toast(type, msg) {
@@ -1118,7 +1229,7 @@ var OceanScene = {
       ];
     });
     function waveSvg(color) { return '<svg viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M0,60 C200,105 400,15 600,60 C800,105 1000,15 1200,60 L1200,120 L0,120 Z" fill="' + color + '"/></svg>'; }
-    return { night: night, stars: STARS, starCount: starCount, waves: waves, waveSvg: waveSvg, miniBottleSvg: miniBottleSvg, onClick: function (b) { ctx.emit("bottle-click", b); } };
+    return { night: night, stars: STARS, starCount: starCount, waves: waves, waveSvg: waveSvg, miniBottleSvg: miniBottleSvg, moodColorOf: moodColorOf, onClick: function (b) { ctx.emit("bottle-click", b); } };
   },
   template: '\
 <div class="ocean" :style="{ background: \'linear-gradient(180deg, var(--sky1) 0%, var(--sky2) 52%, var(--sky3) 100%)\' }">\
@@ -1140,7 +1251,7 @@ var OceanScene = {
     <span v-for="(x, i) in [18, 46, 74]" :key="i" class="bubble anim-bubble" :style="{ left: x + \'%\', animationDelay: (i * 1.6) + \'s\' }"></span>\
   </div>\
   <button v-for="(b, i) in bottles.slice(0, 5)" :key="b.id" class="float-bottle anim-mini-bob" aria-label="打捞这个漂流瓶" :style="{ left: (10 + ((i * 19) % 68)) + \'%\', bottom: (86 + (i % 3) * 26) + \'px\', animationDelay: (i * 0.8) + \'s\' }" @click="onClick(b)">\
-    <span v-html="miniBottleSvg(b.skin)" style="filter:drop-shadow(0 8px 14px rgba(30,60,110,.35))"></span>\
+    <span v-html="miniBottleSvg(b.skin, moodColorOf(b))" style="filter:drop-shadow(0 8px 14px rgba(30,60,110,.35))"></span>\
   </button>\
   <div v-for="(w, i) in waves" :key="i" class="wave" :style="{ height: w.h + \'px\', opacity: w.opacity }" aria-hidden="true">\
     <div class="track anim-wave" :style="{ animationDuration: w.dur + \'s\', animationDirection: w.reverse ? \'reverse\' : undefined }"><span v-html="waveSvg(w.color)" style="width:50%"></span><span v-html="waveSvg(w.color)" style="width:50%"></span></div>\
@@ -1347,16 +1458,16 @@ var HomeView = {
     </div>\
   </OceanScene>\
   <div class="below">\
-    <div class="panel card-soft" style="background:var(--cream)">\
+    <div class="panel card-soft glass">\
       <div class="panel-head"><h2 class="panel-title">今日心情天气</h2><span class="panel-sub">数据只存在你的浏览器里</span></div>\
       <p class="body">{{ weather }}</p>\
     </div>\
-    <div class="panel card-soft quote-panel">\
+    <div class="panel card-soft quote-panel glass">\
       <span class="quote-mark" aria-hidden="true">”</span>\
       <p class="quote-text" :key="quoteIdx"><span class="anim-fade-up" style="display:inline-block">{{ quote }}</span></p>\
       <p class="quote-by">—— 海边的话 · 每 6 秒换一句</p>\
     </div>\
-    <button class="panel card-soft energy-card" @click="go(\'space\')">\
+    <button class="panel card-soft energy-card glass" @click="go(\'space\')">\
       <span class="energy-left"><span class="energy-ico"><span v-html="ic(\'sparkle\', \'ic-l\')"></span></span>\
       <span><span class="energy-name">{{ nickname }} · {{ energyT }}</span><span class="energy-sub" style="display:block">心灵能量 {{ energy }} · 去「我的空间」看勋章与周报</span></span></span>\
       <span style="color:var(--sea-500);font-size:20px">›</span>\
@@ -1370,9 +1481,18 @@ var ThrowView = {
   components: { CareAlert: CareAlert },
   emits: ["open-toolbox"],
   setup: function (props, ctx) {
-    var content = ref(""), mood = ref(null), wantsReply = ref(true), future = ref(false);
+    var content = ref(""), mood = ref(null), moodColor = ref(null), wantsReply = ref(true), future = ref(false);
     var capDays = ref(7), customDate = ref(""), target = ref("ocean");
     var phase = ref("edit"), care = ref(null), shake = ref(false), doneMsg = ref("");
+    var moodColorName = computed(function () {
+      var hit = MOOD_COLORS.filter(function (c) { return c.hex === moodColor.value; })[0];
+      return hit ? "「" + hit.name + "」的光晕会跟着瓶子漂流" : "未选择 · 默认海蓝光晕";
+    });
+    /* 成功页的瓶子投影跟随所选心情色 */
+    var doneFilter = computed(function () {
+      var c = moodColor.value || "#8fb0dc";
+      return "drop-shadow(0 16px 28px " + c + "66)";
+    });
     var danger = computed(function () { return isCrisisText(content.value); });
     var tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
     var warmth = computed(function () { return warmthScore(content.value); });
@@ -1384,7 +1504,7 @@ var ThrowView = {
           if (capDays.value === "custom") sealedUntil = customDate.value ? new Date(customDate.value + "T08:00:00").toISOString() : null;
           else sealedUntil = futureIso(capDays.value);
         }
-        createBottle({ content: content.value.trim(), mood: mood.value || "other", wantsReply: wantsReply.value, target: future.value ? target.value : "ocean", sealedUntil: sealedUntil });
+        createBottle({ content: content.value.trim(), mood: mood.value || "other", moodColor: moodColor.value, wantsReply: wantsReply.value, target: future.value ? target.value : "ocean", sealedUntil: sealedUntil });
         doneMsg.value = sealedUntil
           ? (target.value === "self" ? "这封信被时间好好收着，到了那一天，会在「我的空间」悄悄打开。" : "这是一只未来的瓶子，时间到了，它才会漂进海里被别人捞起。")
           : (wantsReply.value ? "瓶子已经出发。有人回信时，你会在「我的空间」收到提醒。" : "瓶子已经出发，正随着海浪漂向某个需要它的人。");
@@ -1401,10 +1521,11 @@ var ThrowView = {
       if (risk.level === "implicit") { care.value = { tone: "implicit", matched: risk.matched, rewrite: risk.rewrite }; return; }
       doSend();
     }
-    function reset() { content.value = ""; mood.value = null; future.value = false; phase.value = "edit"; }
+    function reset() { content.value = ""; mood.value = null; moodColor.value = null; future.value = false; phase.value = "edit"; }
     function onContent(e) { content.value = e.target.value.slice(0, 300); }
     return {
-      content: content, mood: mood, wantsReply: wantsReply, future: future, capDays: capDays, customDate: customDate, target: target,
+      content: content, mood: mood, moodColor: moodColor, moodColorName: moodColorName, doneFilter: doneFilter, moodColors: MOOD_COLORS,
+      wantsReply: wantsReply, future: future, capDays: capDays, customDate: customDate, target: target,
       phase: phase, care: care, shake: shake, doneMsg: doneMsg, danger: danger, tomorrow: tomorrow, warmth: warmth,
       moods: MOOD_LIST, submit: submit, reset: reset, onContent: onContent,
       energyThrow: ENERGY_RULES.throw, glassBottleSvg: glassBottleSvg, ic: ic, spinner: spinner, go: go,
@@ -1413,7 +1534,7 @@ var ThrowView = {
   },
   template: '\
 <div v-if="phase === \'done\'" class="done-wrap anim-fade-up">\
-  <div class="done-bottle anim-bob" v-html="glassBottleSvg()" style="filter:drop-shadow(0 16px 28px rgba(70,100,170,.3))"></div>\
+  <div class="done-bottle anim-bob" v-html="glassBottleSvg()" :style="{ filter: doneFilter }"></div>\
   <h2 class="done-title">漂流瓶已出发 🌊</h2>\
   <p class="done-msg">{{ doneMsg }}</p>\
   <p class="done-energy">✨ 获得 {{ energyThrow }} 点心灵能量</p>\
@@ -1443,6 +1564,14 @@ var ThrowView = {
       <div class="chips" role="group" aria-label="情绪标签">\
         <button v-for="m in moods" :key="m[0]" class="chip" :class="[\'chip-\' + m[0], { sel: mood === m[0] }]" :style="mood === m[0] ? {} : { opacity: .75 }" :aria-pressed="mood === m[0]" @click="mood = (mood === m[0] ? null : m[0])"><span class="dot" :style="{ background: m[1].dot }"></span>{{ m[1].label }}</button>\
       </div>\
+    </div>\
+    <div style="margin-top:16px">\
+      <p class="section-label">瓶身颜色 · 心情光晕</p>\
+      <div class="swatch-row" role="group" aria-label="选择瓶身颜色">\
+        <button v-for="c in moodColors" :key="c.hex" class="swatch" :class="{ sel: moodColor === c.hex }" :style="{ background: c.hex, color: c.hex }" :aria-pressed="moodColor === c.hex" :aria-label="c.name" :title="c.name" @click="moodColor = (moodColor === c.hex ? null : c.hex)"></button>\
+        <span class="swatch-name">{{ moodColorName }}</span>\
+      </div>\
+      <p style="margin-top:8px;font-size:11px;line-height:1.6;color:var(--ink-faint)">颜色会随瓶子存入数据库（mood_color 列），捞瓶人看到的卡片会泛起对应颜色的光。</p>\
     </div>\
     <div class="switch-row" style="margin-top:20px">\
       <span><span class="t">希望收到回信</span><span class="d" style="display:block">有人回复时，你会在「我的空间」收到匿名提醒</span></span>\
@@ -1485,8 +1614,58 @@ var CatchView = {
     var composer = ref(""), chosenStyle = ref(null), aiOpen = ref(false), aiLoading = ref(false), aiReplies = ref(null);
     var sending = ref(false), care = ref(null), reportTarget = ref(null), hearts = reactive({}), shake = ref(false);
     var usedInitial = false;
+    /* ✍️ 打字机：信件内容逐字浮现 */
+    var typed = ref(""), typing = ref(false), typeTimer = null;
+    function startTyping(text) {
+      if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+      typed.value = ""; typing.value = true;
+      var i = 0;
+      typeTimer = setInterval(function () {
+        i += 1;
+        typed.value = text.slice(0, i);
+        if (i >= text.length) { clearInterval(typeTimer); typeTimer = null; typing.value = false; }
+      }, 45);
+    }
+    function skipTyping() {
+      if (!typing.value || !bottle.value) return;
+      if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
+      typed.value = bottle.value.content; typing.value = false;
+    }
+    onUnmounted(function () { if (typeTimer) clearInterval(typeTimer); });
+    /* ❤️ 送出温暖：爱心飘浮 + 云端 likes 回写 */
+    var warmHearts = ref([]), cloudLiked = ref(false);
+    function burstHearts() {
+      var batch = [];
+      for (var k = 0; k < 8; k++) batch.push({ id: Date.now() + k + Math.floor(Math.random() * 999), x: Math.random() * 60 - 30, delay: Math.random() * 0.3, size: 14 + Math.random() * 12, hue: Math.random() > 0.5 ? "rose" : "warm" });
+      warmHearts.value = warmHearts.value.concat(batch);
+      setTimeout(function () {
+        warmHearts.value = warmHearts.value.filter(function (x) { return !batch.some(function (b) { return b.id === x.id; }); });
+      }, 1800);
+    }
+    function sendWarmth() {
+      if (!bottle.value) return;
+      if (bottle.value.fromCloud) {
+        if (cloudLiked.value) { toast("warn", "已经给这只瓶子送过温暖啦~"); return; }
+        bottle.value.likes += 1; cloudLiked.value = true;
+        bottle.value = Object.assign({}, bottle.value);
+        if (bottle.value.cloudId && sb) {
+          likeCloudBottle(bottle.value.cloudId, bottle.value.likes).then(function () {
+            store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步";
+            toast("ok", "温暖已同步到云端 ❤️");
+          }).catch(function () { toast("warn", "云端还没开通温暖通道（需 likes 列），已记在心里"); });
+        }
+      } else {
+        var res = toggleHug(bottle.value.id);
+        bottle.value = Object.assign({}, res.bottle);
+        if (res.hugged) toast("ok", "送出一个温暖的拥抱 🤗");
+      }
+      burstHearts();
+      refreshUser();
+    }
     function fetchOne(excludeId) {
       phase.value = "fetching"; composer.value = ""; chosenStyle.value = null; aiOpen.value = false; aiReplies.value = null;
+      cloudLiked.value = false; warmHearts.value = []; typed.value = ""; typing.value = false;
+      if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
       setTimeout(async function () {
         var b = null;
         if (!usedInitial && props.initialBottleId) {
@@ -1509,6 +1688,7 @@ var CatchView = {
         if (!b) { bottle.value = null; phase.value = "empty"; return; }
         dbAddEnergy(ENERGY_RULES.catch); refreshUser();
         bottle.value = b; replies.value = listReplies(b.id); phase.value = "letter";
+        startTyping(b.content);   // ✍️ 像写信一样逐字展开
       }, 850);
     }
     onMounted(function () { fetchOne(); });
@@ -1516,6 +1696,10 @@ var CatchView = {
     var isMine = computed(function () { return bottle.value && store.user && bottle.value.authorId === store.user.id; });
     var hugged = computed(function () { return bottle.value && store.user && bottle.value.huggedBy.indexOf(store.user.id) >= 0; });
     var moodMeta = computed(function () { return bottle.value ? MOODS[bottle.value.mood] : null; });
+    /* 🎨 心情瓶色光晕 + 温暖计数（云端瓶读 likes 列，本地瓶读 hugs） */
+    var glowColor = computed(function () { return moodColorOf(bottle.value); });
+    var likesCount = computed(function () { return bottle.value ? (bottle.value.fromCloud ? (bottle.value.likes || 0) : bottle.value.hugs) : 0; });
+    var warmed = computed(function () { return bottle.value ? (bottle.value.fromCloud ? cloudLiked.value : hugged.value) : false; });
     function submitReply() {
       if (!bottle.value) return;
       var t = composer.value.trim();
@@ -1574,6 +1758,8 @@ var CatchView = {
       phase: phase, bottle: bottle, replies: replies, composer: composer, chosenStyle: chosenStyle, aiOpen: aiOpen, aiLoading: aiLoading, aiReplies: aiReplies,
       sending: sending, care: care, reportTarget: reportTarget, hearts: hearts, shake: shake,
       warmth: warmth, isMine: isMine, hugged: hugged, moodMeta: moodMeta,
+      typed: typed, typing: typing, skipTyping: skipTyping, glowColor: glowColor, likesCount: likesCount, warmed: warmed,
+      warmHearts: warmHearts, sendWarmth: sendWarmth, moodColorOf: moodColorOf,
       fetchOne: fetchOne, submitReply: submitReply, openAi: openAi, pickStyle: pickStyle, like: like, hug: hug, confirmReport: confirmReport,
       warm: warm, liked: liked, reported: reported,
       styles: REPLY_STYLES, styleKeys: STYLE_KEYS, timeAgo: timeAgo, glassBottleSvg: glassBottleSvg, miniBottleSvg: miniBottleSvg, ic: ic, spinner: spinner, go: go,
@@ -1599,15 +1785,22 @@ var CatchView = {
     <div><h1 class="catch-title">捞到一个瓶子</h1><p class="catch-sub">来自一位匿名的心事主人 · {{ timeAgo(bottle.createdAt) }}</p></div>\
     <button class="btn btn-ghost" style="padding:8px 16px;font-size:12px" @click="fetchOne(bottle.id)"><span v-html="ic(\'refresh\', \'ic-s\')"></span>换一个</button>\
   </header>\
-  <div class="letter-card card-soft">\
+  <div class="letter-card card-soft" :style="{ boxShadow: \'0 0 0 2px \' + glowColor + \'45, 0 22px 60px \' + glowColor + \'30\' }">\
     <div class="letter-top">\
-      <span class="letter-author"><span v-html="miniBottleSvg(bottle.skin)" style="width:24px"></span>匿名漂流者</span>\
+      <span class="letter-author"><span v-html="miniBottleSvg(bottle.skin, glowColor)" style="width:24px"></span>匿名漂流者</span>\
       <span class="meta-chip" :class="\'chip-\' + bottle.mood"><span class="dot" :style="{ background: moodMeta.dot }"></span>{{ moodMeta.label }}</span>\
     </div>\
     <div class="letter-body">\
-      <p class="letter-content">{{ bottle.content }}</p>\
-      <button v-if="!isMine" class="hug-btn" :class="{ on: hugged }" :aria-pressed="hugged" @click="hug()"><span v-html="ic(\'heartFilled\', \'ic-s\')"></span>抱抱 TA · {{ bottle.hugs }}</button>\
+      <p class="letter-content" @click="skipTyping" :title="typing ? \'点击展开全文\' : \'\'">{{ typed }}<span v-if="typing" class="caret" aria-hidden="true"></span></p>\
+      <p v-if="typing" style="margin-top:10px;font-size:11px;color:var(--ink-faint)">信纸正在展开… 点一下可立即读完</p>\
     </div>\
+  </div>\
+  <div class="warmth-bar glass card-soft">\
+    <span class="warmth-count">已有 <b>{{ likesCount }}</b> 人从这只瓶子感到温暖</span>\
+    <span style="position:relative;display:inline-flex">\
+      <svg v-for="h in warmHearts" :key="h.id" viewBox="0 0 24 24" class="heart-float" :style="{ position:\'absolute\', bottom:\'100%\', left:\'50%\', marginLeft: h.x + \'px\', width: h.size + \'px\', animationDelay: h.delay + \'s\', color: h.hue === \'rose\' ? \'#ea9cb2\' : \'#f09f7d\' }" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z" fill="currentColor"/></svg>\
+      <button class="warmth-btn" :class="{ on: warmed }" @click="sendWarmth"><span v-html="ic(warmed ? \'heartFilled\' : \'heart\', \'ic-m\')"></span>{{ warmed ? \'温暖已送出\' : \'送出温暖\' }}</button>\
+    </span>\
   </div>\
   <div class="reply-box card-soft">\
     <div class="reply-head"><span class="lbl">写一句温暖的话给 TA</span><button class="btn-ai btn" @click="openAi"><span v-html="ic(\'sparkle\', \'ic-s\')"></span>AI 推荐安慰话术</button></div>\
@@ -1703,7 +1896,7 @@ var SpaceView = {
       tab: tab, weekOpen: weekOpen, stats: stats, myBottles: myBottles, myReplies: myReplies, notices: notices, unread: unread,
       user: user, frameClass: frameClass, replyCount: replyCount, unlock: unlock, equip: equip, owned: owned, equipped: equipped,
       noticeText: noticeText, reroll: reroll, markRead: markRead, badgeGot: badgeGot,
-      badges: BADGES, unlocks: UNLOCKS, moods: MOODS, energyTitle: energyTitle, isUnsealed: isUnsealed, countdownLabel: countdownLabel,
+      badges: BADGES, unlocks: UNLOCKS, moods: MOODS, energyTitle: energyTitle, isUnsealed: isUnsealed, countdownLabel: countdownLabel, moodColorOf: moodColorOf,
       timeAgo: timeAgo, glassBottleSvg: glassBottleSvg, miniBottleSvg: miniBottleSvg, ic: ic, go: go, isWarmReply: isWarmReply,
       openBottle: function (id) { ctx.emit("open-bottle", id); }
     };
@@ -1740,7 +1933,7 @@ var SpaceView = {
       <div v-else>\
         <div v-for="b in myBottles" :key="b.id" class="item-card card-soft">\
           <div class="item-meta">\
-            <span v-html="miniBottleSvg(b.skin)" style="width:20px"></span>\
+            <span v-html="miniBottleSvg(b.skin, moodColorOf(b))" style="width:20px"></span>\
             <span class="meta-chip" :class="\'chip-\' + b.mood">{{ moods[b.mood].label }}</span>\
             <span v-if="!isUnsealed(b)" class="meta-chip" style="background:var(--dusk-100);color:var(--dusk-500)"><span v-html="ic(\'clock\', \'ic-s\')"></span>{{ countdownLabel(b.sealedUntil) }} · {{ b.target === \'self\' ? \'给未来的自己\' : \'时间胶囊\' }}</span>\
             <span v-if="b.wantsReply && replyCount(b) > 0 && isUnsealed(b)" class="meta-chip" style="background:var(--blush-100);color:var(--blush-500)">有 {{ replyCount(b) }} 封回信 💌</span>\
@@ -1835,6 +2028,45 @@ var WeeklyModal = {
 </div>'
 };
 
+/* ---------------- 我的足迹（localStorage 里我抛过的瓶子） ---------------- */
+var TracesModal = {
+  emits: ["close"],
+  setup: function (props, ctx) {
+    var mine = listMine();
+    function replyCountOf(b) { return listReplies(b.id).length; }
+    onMounted(function () {
+      var onKey = function (e) { if (e.key === "Escape") ctx.emit("close"); };
+      window.addEventListener("keydown", onKey); window._tracesKey = onKey;
+    });
+    return { mine: mine, replyCountOf: replyCountOf, isUnsealed: isUnsealed, countdownLabel: countdownLabel, timeAgo: timeAgo, moodColorOf: moodColorOf, moods: MOODS, ic: ic };
+  },
+  unmounted: function () { if (window._tracesKey) { window.removeEventListener("keydown", window._tracesKey); window._tracesKey = null; } },
+  template: '\
+<div class="overlay">\
+  <button class="bg anim-backdrop-in" aria-label="关闭" @click="$emit(\'close\')"></button>\
+  <div class="dialog anim-modal-in" role="dialog" aria-modal="true" aria-label="我的足迹">\
+    <div class="dialog-head"><div><h3>我的足迹 🐚</h3><p class="sub">这只浏览器抛出的瓶子 · 共 {{ mine.length }} 只</p></div><button class="icon-btn" aria-label="关闭" @click="$emit(\'close\')" v-html="ic(\'close\')"></button></div>\
+    <div class="dialog-body">\
+      <div v-if="!mine.length" class="empty" style="border:none;background:none;box-shadow:none">\
+        <span class="ico"><span v-html="ic(\'bottle\', \'ic-xl\')"></span></span>\
+        <p class="t">还没有足迹</p>\
+        <p class="d">抛出第一个瓶子后，它会在这里留下脚印。</p>\
+      </div>\
+      <div v-for="b in mine" :key="b.id" class="traces-item">\
+        <div class="traces-meta">\
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;box-shadow:0 0 8px currentColor" :style="{ background: moodColorOf(b), color: moodColorOf(b) }"></span>\
+          <span>{{ moods[b.mood].label }}</span>\
+          <span v-if="!isUnsealed(b)">⏳ {{ countdownLabel(b.sealedUntil) }}</span>\
+          <span>🤗 {{ b.hugs }}</span><span>💬 {{ replyCountOf(b) }}</span>\
+          <span style="margin-left:auto">{{ timeAgo(b.createdAt) }}</span>\
+        </div>\
+        <p>{{ b.content }}</p>\
+      </div>\
+    </div>\
+  </div>\
+</div>'
+};
+
 /* ---------------- 根应用 ---------------- */
 var App = {
   components: { HomeView: HomeView, ThrowView: ThrowView, CatchView: CatchView, SpaceView: SpaceView, ToolboxModal: ToolboxModal },
@@ -1844,7 +2076,8 @@ var App = {
     cloudPing();   // ☁️ 启动时探测 Supabase 连通性，更新页脚连接状态
     var NAV = [ { id: "home", label: "首页", icon: "home" }, { id: "throw", label: "抛瓶", icon: "plus" }, { id: "catch", label: "捞瓶", icon: "bottle" }, { id: "space", label: "我的", icon: "user" } ];
     var themeClass = computed(function () { return "theme-" + (store.user ? store.user.theme : "dawn"); });
-    var bgStyle = computed(function () { return { background: "linear-gradient(180deg, var(--sky3) 0%, #ebe6d8 360px, #ebe6d8 100%)" }; });
+    /* 页面底色改为半透明，让固定层的动态海洋画布（波浪 + 气泡）透上来 */
+    var bgStyle = computed(function () { return { background: "linear-gradient(180deg, var(--sky3) 0%, rgba(238,233,219,.62) 420px, rgba(238,233,219,.45) 100%)" }; });
     function closeToolbox() { store.toolboxOpen = false; store.toolboxReason = null; }
     return { store: store, NAV: NAV, themeClass: themeClass, bgStyle: bgStyle, go: go, openBottleById: openBottleById, openToolbox: openToolbox, closeToolbox: closeToolbox, ic: ic };
   },
@@ -1858,6 +2091,7 @@ var App = {
     <footer class="footer-note">心灵漂流瓶 · 匿名同伴互助演示版<br/>{{ store.cloudMode }}<br/>抛瓶写入云端 bottles 表 · 捞瓶从云端随机读取 · 断网自动回退本地<br/>若你或身边的人正处于危机中，请拨打 12355 或当地心理援助热线</footer>\
   </main>\
   <button class="fab" aria-label="打开急救工具箱：呼吸引导、白噪音与心理热线" @click="openToolbox()"><span class="ring anim-pulse-ring" aria-hidden="true"></span><span style="position:relative" v-html="ic(\'wind\', \'ic-xl\')"></span></button>\
+  <button class="fab-traces" aria-label="查看我的足迹" @click="store.tracesOpen = true"><span v-html="ic(\'shell\', \'ic-s\')"></span>我的足迹</button>\
   <nav class="bottomnav" aria-label="主导航">\
     <div class="inner">\
       <button v-for="n in NAV" :key="n.id" class="nav-btn" :class="{ active: store.view === n.id }" :aria-current="store.view === n.id ? \'page\' : undefined" @click="go(n.id)">\
