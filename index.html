@@ -533,6 +533,95 @@ body{line-height:1.6}
 .treehole-card .th-label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:500;color:var(--sea-600)}
 .treehole-card .th-body{margin-top:10px;font-family:var(--font-letter);font-size:15px;line-height:1.8;color:var(--ink)}
 .treehole-card .th-actions{margin-top:14px;display:flex;gap:8px;justify-content:flex-end}
+
+/* ============ v4 手绘治愈风（米黄纸张 + 暖棕墨色） ============ */
+/* 纸张主题：让海洋场景也染上米黄暖调 */
+.theme-dawn{--sky1:#f7ead0;--sky2:#f3e2c2;--sky3:#efe0be;--sea-a:#e0c89b;--sea-b:#c8a671;--glow:rgba(224,168,80,.5);--star-op:.22}
+.theme-dusk{--sky1:#f3e0c8;--sky2:#eed6b6;--sky3:#e9cda8;--sea-a:#d3b088;--sea-b:#b98f62;--glow:rgba(230,150,90,.55);--star-op:.3}
+.theme-night{--sky1:#8a6b4a;--sky2:#77593c;--sky3:#654a31;--sea-a:#9c7b52;--sea-b:#7d6040;--glow:rgba(250,235,200,.8);--star-op:1}
+
+/* 全站字体：ZCOOL KuaiLe 手写感 */
+body{font-family:"ZCOOL KuaiLe","Noto Sans SC",cursive!important;background:#f6ecd9!important;color:#5d4632!important}
+.font-display,.home-title,.catch-title,.done-title,.panel-title,.dialog h3,.week-poster .week-pre{font-family:"ZCOOL KuaiLe","Noto Sans SC",cursive!important}
+.font-letter,.letter-content,.quote-text{font-family:"ZCOOL KuaiLe","Noto Sans SC",cursive!important}
+
+/* 米黄纸张纹理底 */
+#app{background:#f6ecd9!important;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.42 0 0 0 0 0.31 0 0 0 0 0.19 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23p)'/%3E%3C/svg%3E")!important}
+
+/* 手绘波浪边框卡片（sketchy 圆角技巧 + 轻微倾斜） */
+.card,.panel,.letter-card,.reply-box,.reply-item,.dialog,.warmth-bar,.ai-card,.treehole-card,.capsule-box,.week-poster,.sea-window,.empty,.crisis-lines .crisis-line,.traces-item{
+  border-radius:255px 18px 225px 18px/18px 225px 18px 255px!important;
+  border:2.5px solid #7a5c3e!important;
+  box-shadow:3px 4px 0 rgba(122,92,62,.16)!important;
+  background:#fdf7ea!important;
+}
+.letter-card,.reply-box,.dialog,.treehole-card{background:#fdf6e8!important}
+/* 每张卡片轻微随机倾斜，像手贴的便签 */
+.panel:nth-child(odd){transform:rotate(-.5deg)}
+.panel:nth-child(even){transform:rotate(.5deg)}
+.letter-card{transform:rotate(-.4deg)}
+.reply-box{transform:rotate(.35deg)}
+
+/* 标题：手绘波浪下划线 */
+.home-title,.catch-title,.done-title,.panel-title,.font-display{
+  text-decoration:underline wavy rgba(196,120,60,.45)!important;
+  text-underline-offset:7px;text-decoration-thickness:2px;
+}
+.home-title,.catch-title,.done-title{color:#5d4632!important}
+
+/* 印章按钮 */
+.btn,.cta,.submit-big,.warmth-btn,.btn-ai{
+  border-radius:14px 16px 13px 17px/17px 13px 16px 14px!important;
+  border:2.5px solid #6b4a2f!important;
+  box-shadow:2.5px 3.5px 0 #6b4a2f!important;
+  font-family:"ZCOOL KuaiLe",cursive!important;
+  transform:rotate(-1.2deg);
+  transition:transform .18s,box-shadow .18s,background-size .45s ease!important;
+  /* 墨水晕开：点击时墨点从中心扩散 */
+  background-image:radial-gradient(circle at center,rgba(93,64,35,.32),rgba(93,64,35,.32) 42%,transparent 43%)!important;
+  background-repeat:no-repeat!important;background-position:center!important;background-size:0% 0%!important;
+}
+.btn:hover,.cta:hover,.submit-big:hover,.warmth-btn:hover{transform:rotate(0deg) translateY(-2px)!important;box-shadow:3.5px 5px 0 #6b4a2f!important}
+.btn:active,.cta:active,.submit-big:active,.warmth-btn:active{transform:rotate(-1.2deg) translate(2.5px,3.5px)!important;box-shadow:0 0 0 #6b4a2f!important;background-size:320% 320%!important}
+/* 印章配色：抛瓶=朱砂红，捞瓶=黛青 */
+.cta-throw,.btn-coral,.warmth-btn{background:#c0574f!important;color:#fdf3e3!important}
+.cta-catch,.btn-sea,.btn-ai{background:#5f7f74!important;color:#f4f1e4!important}
+.btn-ghost{background:#f3e7cd!important;color:#6b4a2f!important}
+.warmth-btn{background:linear-gradient(120deg,#c0574f,#b3714f)!important}
+.warmth-btn.on{background:#a34a43!important}
+
+/* 主按钮保留流光但换成暖色 */
+.cta::after{background:linear-gradient(105deg,transparent 20%,rgba(255,240,205,.55) 50%,transparent 80%)!important}
+
+/* 云朵层：手绘白云缓慢飘过（铺在场景之上） */
+.cloud-layer{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.doodle-cloud{position:absolute;display:block;background:rgba(253,250,240,.9);border:2px solid rgba(122,92,62,.35);
+  border-radius:60px;filter:drop-shadow(2px 3px 0 rgba(122,92,62,.12));animation:cloudDrift linear infinite}
+.doodle-cloud::before,.doodle-cloud::after{content:"";position:absolute;background:inherit;border:2px solid rgba(122,92,62,.35);border-radius:50%}
+.doodle-cloud::before{width:55%;height:150%;top:-70%;left:18%}
+.doodle-cloud::after{width:42%;height:120%;top:-45%;right:15%}
+@keyframes cloudDrift{from{transform:translateX(-25vw)}to{transform:translateX(115vw)}}
+
+/* 主页漂流瓶涂鸦（手绘线条瓶） */
+.home-bottle-doodle{position:absolute;right:5%;bottom:150px;width:110px;z-index:3;transform:rotate(8deg);animation:bob 4.6s ease-in-out infinite;filter:drop-shadow(3px 5px 0 rgba(122,92,62,.2))}
+@media (max-width:640px){.home-bottle-doodle{width:80px;bottom:170px;right:4%}}
+/* 波浪描边 */
+.wave svg path{stroke:#7a5c3e;stroke-width:1.5}
+.ocean{border:2.5px solid #7a5c3e;border-radius:0 0 32px 32px}
+
+/* 手写笔触的细节 */
+.chip,.pill,.meta-chip,.swatch-name,.care-tag{font-family:"ZCOOL KuaiLe",cursive!important;border-radius:12px 14px 11px 15px/15px 11px 14px 12px!important}
+.chip{border:2px solid rgba(122,92,62,.5)!important}
+.textarea,.field-label input,.date-input{border:2.5px dashed rgba(122,92,62,.55)!important;background:#fdf7ea!important;border-radius:16px 12px 18px 12px/12px 18px 12px 16px!important;font-family:"ZCOOL KuaiLe",cursive!important}
+.textarea:focus{border-color:#b3714f!important;box-shadow:0 0 0 3px rgba(179,113,79,.18)!important}
+.bottomnav{background:rgba(246,236,217,.92)!important;border-top:2.5px solid #7a5c3e!important}
+.nav-btn{font-family:"ZCOOL KuaiLe",cursive!important}
+.nav-btn.active{color:#b3552f!important}
+.fab{background:#c0574f!important;border:2.5px solid #6b4a2f!important}
+/* 波浪线分隔 */
+.panel-head,.dialog-head,.catch-head{border-bottom:2px dashed rgba(122,92,62,.4)!important}
+/* 能量卡箭头、引言引号染暖棕 */
+.quote-mark{color:rgba(179,113,79,.5)!important}
 </style>
 </head>
 <body>
@@ -1634,6 +1723,13 @@ var HomeView = {
 <div class="anim-fade-up">\
   <OceanScene :theme="theme" :sea="ocean.sea" :bottles="ocean.drifting" :bottle-count-today="ocean.bottlesToday" :replies-today="ocean.repliesToday" @bottle-click="openBottleById" style="height:62vh;min-height:420px;border-radius:0 0 32px 32px">\
     <div class="home-inner">\
+      <svg class="home-bottle-doodle" viewBox="0 0 80 120" aria-hidden="true">\
+        <path d="M32 8 q-2 6 -1 12 q-8 4 -10 14 q-3 14 -2 34 q1 24 4 34 q2 8 17 8 q15 0 17 -8 q3 -10 4 -34 q1 -20 -2 -34 q-2 -10 -10 -14 q1 -6 -1 -12 q-8 -3 -16 0 Z" fill="rgba(253,247,234,.55)" stroke="#7a5c3e" stroke-width="2.5" stroke-linejoin="round"/>\
+        <rect x="29" y="2" width="22" height="9" rx="3" fill="#c8a06a" stroke="#7a5c3e" stroke-width="2.2"/>\
+        <path d="M30 62 q10 -6 20 0 q-2 18 -10 18 q-8 0 -10 -18 Z" fill="#fdf3dc" stroke="#a97e4e" stroke-width="2" stroke-linejoin="round"/>\
+        <path d="M34 66 l12 10 M46 66 l-12 10" stroke="#c0574f" stroke-width="2" stroke-linecap="round"/>\
+        <path d="M24 92 q6 4 12 0 q6 4 12 0" stroke="#a97e4e" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".7"/>\
+      </svg>\
       <div class="home-top">\
         <p class="home-eyebrow" :style="{ color: night ? \'var(--sea-200)\' : \'var(--sea-600)\' }"><span v-html="ic(\'waves\', \'ic-s\')"></span>匿名心理互助 · 面向学生</p>\
         <h1 class="home-title" :style="{ color: night ? \'#fff\' : \'var(--ink-deep)\' }">心灵漂流瓶</h1>\
@@ -1678,6 +1774,8 @@ var ThrowView = {
     var capDays = ref(7), customDate = ref(""), target = ref("ocean");
     var depth = ref(0);                                   // 🌊 0=浅滩 1=深海
     var phase = ref("edit"), care = ref(null), shake = ref(false), doneMsg = ref("");
+    /* 🌳 树洞自动回信：瓶子抛出的同时，AI 树洞悄悄写一封回信 */
+    var treeReply = ref(""), treeLoading = ref(false);
     var crisisOpen = ref(false);                          // ☎️ 危机干预弹窗
     var moodColorName = computed(function () {
       var hit = MOOD_COLORS.filter(function (c) { return c.hex === moodColor.value; })[0];
@@ -1734,6 +1832,9 @@ var ThrowView = {
           : (wantsReply.value ? "瓶子已经出发。有人回信时，你会在「我的空间」收到提醒。" : "瓶子已经出发，正随着海浪漂向某个需要它的人。");
         phase.value = "done";
         refreshUser();
+        /* 🌳 抛瓶成功的同时，树洞立刻动笔回信（异步，不阻塞页面） */
+        treeLoading.value = true; treeReply.value = "";
+        getTreeHole(content.value.trim(), mood.value || "other").then(function (t) { treeReply.value = t; treeLoading.value = false; });
       }, 900);
     }
     /* 三级内容安全：危机干预 → 敏感词拦截 → AI 语义审核 */
@@ -1762,7 +1863,7 @@ var ThrowView = {
     return {
       content: content, mood: mood, moodColor: moodColor, moodColorName: moodColorName, doneFilter: doneFilter, moodColors: MOOD_COLORS,
       wantsReply: wantsReply, future: future, capDays: capDays, customDate: customDate, target: target, depth: depth,
-      phase: phase, care: care, shake: shake, doneMsg: doneMsg, danger: danger, tomorrow: tomorrow, warmth: warmth, crisisOpen: crisisOpen,
+      phase: phase, care: care, shake: shake, doneMsg: doneMsg, danger: danger, tomorrow: tomorrow, warmth: warmth, crisisOpen: crisisOpen, treeReply: treeReply, treeLoading: treeLoading,
       doodleOpen: doodleOpen, hasDoodle: hasDoodle, doodleCanvas: doodleCanvas,
       toggleDoodle: toggleDoodle, startDraw: startDraw, moveDraw: moveDraw, endDraw: endDraw, clearDoodle: clearDoodle,
       moods: MOOD_LIST, submit: submit, reset: reset, onContent: onContent,
@@ -1776,6 +1877,11 @@ var ThrowView = {
   <h2 class="done-title">漂流瓶已出发 🌊</h2>\
   <p class="done-msg">{{ doneMsg }}</p>\
   <p class="done-energy">✨ 获得 {{ energyThrow }} 点心灵能量</p>\
+  <div class="treehole-card anim-fade-up" style="margin-top:18px;text-align:left">\
+    <p class="th-label"><span v-html="ic(\'sparkle\', \'ic-s\')"></span>🌳 树洞的回信 · 你的心事不会石沉大海</p>\
+    <template v-if="treeLoading"><div class="shimmer" style="height:64px;border-radius:14px;margin-top:12px" aria-hidden="true"></div></template>\
+    <p v-else class="th-body">{{ treeReply }}</p>\
+  </div>\
   <div class="done-actions">\
     <button class="btn btn-ghost" @click="reset">再写一个</button>\
     <button class="btn btn-sea" @click="go(\'catch\')">去捞一个瓶子</button>\
@@ -2421,6 +2527,11 @@ var App = {
   },
   template: '\
 <div :class="themeClass" :style="bgStyle" style="min-height:100vh">\
+  <div class="cloud-layer" aria-hidden="true">\
+    <span class="doodle-cloud" style="top:7%;width:130px;height:34px;animation-duration:95s"></span>\
+    <span class="doodle-cloud" style="top:16%;width:90px;height:26px;opacity:.8;animation-duration:120s;animation-delay:-40s"></span>\
+    <span class="doodle-cloud" style="top:4%;width:110px;height:30px;opacity:.85;animation-duration:140s;animation-delay:-80s"></span>\
+  </div>\
   <main class="main">\
     <HomeView v-if="store.view === \'home\'" />\
     <ThrowView v-else-if="store.view === \'throw\'" @open-toolbox="openToolbox" />\
