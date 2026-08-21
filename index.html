@@ -1000,8 +1000,10 @@ function weeklyQuote(stats) {
    ---------------------------------------------------------------------
    · 通过 CDN 引入 supabase-js v2（见 <head> 上方），全局对象 window.supabase
    · 使用「可发布密钥 publishable key」初始化，可安全地放在前端代码里
-   · 策略：云端优先、本地兜底 —— 网络可用时抛瓶写入云端、捞瓶从云端随机读取；
-     断网或表未建好时自动退回 localStorage，页面永远不会白屏
+   · 策略：云端优先、本地兜底 —— 网络可用时抛瓶写入云端（content + drawing）、
+     捞瓶从云端随机读取；断网或表未建好时自动退回 localStorage，页面永远不会白屏
+   · drawing 列（text，存涂鸦 Base64）建表语句：
+     alter table public.bottles add column if not exists drawing text;
 
    首次使用请先在 Supabase 控制台 SQL Editor 里执行以下建表语句。
    注意：代码插入时只写 content 一个字段（多余字段会导致 400 报错），
@@ -1046,32 +1048,44 @@ var sb = (window.supabase && window.supabase.createClient)
  * @throws  插入失败（400 / 断网等）时抛出原始 error 对象，由调用方决定降级策略
  */
 /**
- * 抛瓶子：向 bottles 表插入一条数据
+ * 抛瓶子：向 bottles 表插入一条数据（文字 + 灵魂涂鸦）
  * ------------------------------------------------------------------
- * ⚠️ 你的 bottles 表目前只有 content 一列，所以这里严格只写 content。
- *    多写任何一个表里不存在的列（mood_color / doodle / depth…）都会 400。
- *    涂鸦、心情、深浅海等玩法数据全部存在浏览器本地（见 createBottle），
- *    云端只负责共享「文字内容」，等以后给表加了列再往这里补字段。
+ * ⚠️ 前置条件：bottles 表需要有 drawing 列（text 类型，存 Base64 长字符串）。
+ *    在 Supabase 控制台 SQL Editor 执行：
+ *      alter table public.bottles add column if not exists drawing text;
  *
  *   · 表名严格使用 'bottles'（全小写）
- *   · 字段名严格使用 content
+ *   · 组装对象包含 { content, drawing }
  *   · 不链式调用 .select()，插入后直接拿结果
- *   · 插入前 console.log 数据；出错时打印完整 error 对象
+ *   · 插入前打印数据（drawing 太长，只打印前 50 个字符）
+ *   · 若 drawing 列还没建好（400），自动降级为只写 content，保证抛瓶不失败
  */
-async function throwBottle(content) {
-  // 1) 组装数据：严格只有 content 一个字段
+async function throwBottle(content, drawing) {
+  // 1) 组装数据对象：content + drawing（涂鸦 Base64；没画时不传该字段）
   var data = { content: content };
+  if (drawing) data.drawing = drawing;
 
-  // 2) 插入前打印，方便在控制台确认数据长什么样
-  console.log('准备插入的数据:', data);
+  // 2) 调试日志：确认画画数据到底有没有被获取到
+  console.log('准备存入的数据:', {
+    content: content,
+    drawing: drawing ? (drawing.substring(0, 50) + '...') : '(无涂鸦)'
+  });
 
   // 3) 表名严格 'bottles'；插入后直接返回结果，不链式调用 .select()
   var result = await sb.from("bottles").insert(data);
 
   // 4) insert 不会抛异常，数据库错误放在 result.error 里，需要手动检查
   if (result.error) {
-    // 5) 打印完整的 error 对象（含 code / message / details / hint）
     console.error('Supabase 报错详情:', result.error);
+
+    // 5) 兜底：drawing 列不存在导致 400 时，降级为只写 content 重试
+    var msg = String(result.error.message || "");
+    if (drawing && (result.error.code === "42703" || msg.indexOf("drawing") >= 0)) {
+      console.warn('⚠️ 数据库还没有 drawing 列，涂鸦本次未同步。请执行：alter table public.bottles add column if not exists drawing text;');
+      var retry = await sb.from("bottles").insert({ content: content });
+      if (retry.error) { console.error('Supabase 报错详情:', retry.error); throw retry.error; }
+      return retry;
+    }
     throw result.error;
   }
   return result;
@@ -1140,6 +1154,7 @@ function cloudToLocal(row) {
     mood: MOODS[row.mood] ? row.mood : "other",     // 缺列时按「其他」情绪渲染
     moodColor: row.mood_color || null,              // ☁️ 心情瓶色（mood_color 列）
     likes: row.likes || 0,                          // ☁️ 温暖点赞数（likes 列）
+    doodle: row.drawing || null,                    // 🎨 灵魂涂鸦（drawing 列，Base64）
     skin: "skin-default",
     hugs: 0,
     huggedBy: [],
@@ -1251,9 +1266,10 @@ function createBottle(input) {
 
   /* ☁️ 云端同步：只有「立刻漂给陌生人」的普通瓶子才进海；
         时间胶囊（sealedUntil）要等开启后才该被捞到，故暂不上传。
-        注意：云端只同步 content 一个字段（见 throwBottle 注释）。 */
+        注意：云端同步 content + drawing 两个字段（见 throwBottle 注释）；
+        drawing 列未建好时会自动降级为只写 content。 */
   if (sb && input.target === "ocean" && !input.sealedUntil) {
-    throwBottle(input.content)
+    throwBottle(input.content, input.doodle)
       .then(function () { store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步"; })
       .catch(function (err) {
         // ☁️ 云端同步失败的兜底处理：本地瓶子不受影响，页脚切回离线模式
