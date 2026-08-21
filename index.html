@@ -708,21 +708,18 @@ function weeklyQuote(stats) {
    · 策略：云端优先、本地兜底 —— 网络可用时抛瓶写入云端、捞瓶从云端随机读取；
      断网或表未建好时自动退回 localStorage，页面永远不会白屏
 
-   首次使用请先在 Supabase 控制台 SQL Editor 里执行以下建表语句：
+   首次使用请先在 Supabase 控制台 SQL Editor 里执行以下建表语句。
+   注意：代码插入时只写 content 一个字段（多余字段会导致 400 报错），
+   所以下表只保留必需列；id / created_at 由数据库自动生成：
 
      create table public.bottles (
        id          uuid primary key default gen_random_uuid(),
-       content     text        not null,                 -- 瓶中信内容
-       mood        text        default 'other',          -- 情绪标签
-       wants_reply boolean     default true,             -- 是否希望收到回信
-       sealed_until timestamptz,                         -- 时间胶囊开启时间（可空）
-       created_at  timestamptz default now()             -- 抛瓶时间
+       content     text not null                          -- 瓶中信内容
      );
 
-     -- 开启行级安全（RLS）并放行匿名读写（演示用，生产环境请收紧策略）
-     alter table public.bottles enable row level security;
-     create policy "allow anon read"   on public.bottles for select using (true);
-     create policy "allow anon insert" on public.bottles for insert with check (true);
+     -- 若已按最小表建好，可跳过下面两行；RLS 已关闭时也不需要建 policy
+     alter table public.bottles enable row level security;   -- 可选
+     create policy "allow anon all" on public.bottles for all using (true);  -- 可选
    ===================================================================== */
 
 /** Supabase 项目配置 —— 换项目时只需改这里 */
@@ -740,73 +737,84 @@ var sb = (window.supabase && window.supabase.createClient)
 
 /**
  * 抛瓶子：向 bottles 表插入一条数据
+ * ------------------------------------------------------------------
+ * 按需求严格简化：
+ *   · 表名严格使用 'bottles'
+ *   · 插入字段严格只有 content（多发一个表里不存在的列就会 400）
+ *   · 不链式调用 .select()，插入后直接返回结果
+ *   · 插入前 console.log 数据形状；catch 时打印完整 error 对象
+ *
  * @param {string} content 瓶中信内容
- * @param {object} [extra] 可选字段：{ mood, wants_reply, sealed_until }
- * @returns {Promise<object>} 插入成功后返回数据库里那一行（含服务端生成的 id / created_at）
- * @throws  插入失败（如 RLS 拒绝、断网）时抛出 Error，由调用方决定降级策略
+ * @returns {Promise<*>} insert 的直接返回值。注意：不链 .select() 时，
+ *                       v2 成功插入返回的是 minimal 响应（data 为 null、HTTP 201），
+ *                       这是正常现象——数据已经写进数据库了。
+ * @throws  插入失败（400 / 断网等）时抛出原始 error 对象，由调用方决定降级策略
  */
-async function throwBottle(content, extra) {
-  extra = extra || {};
-  var { data, error } = await sb
-    .from("bottles")
-    .insert({
-      content: content,                     // 必填：瓶子内容
-      mood: extra.mood || "other",          // 情绪标签
-      wants_reply: extra.wants_reply !== false,
-      sealed_until: extra.sealed_until || null
-    })
-    .select()      // v2 默认返回 minimal，加 select() 才能拿回刚插入的行
-    .single();     // 只插入了一条，所以取单行
+async function throwBottle(content) {
+  // 1) 组装插入数据：字段名严格使用 content，不带任何额外字段
+  var data = { content: content };
 
-  if (error) {
-    // 📋 打印完整错误对象（含 code / message / details / hint），方便在控制台定位
-    //    常见 code：42P01 = 表不存在；PGRST204/42703 = 列名不匹配；42501 = 权限不足
-    console.error('Supabase 报错详情:', error);
-    throw new Error("抛瓶失败：" + error.message);
+  // 2) 插入前打印，方便在控制台确认数据长什么样
+  console.log('准备插入的数据:', data);
+
+  try {
+    // 3) 表名严格 'bottles'；插入后直接拿结果，不链式调用 .select()
+    var { data: result, error } = await sb.from("bottles").insert(data);
+
+    // 4) error 不为 null 就抛出，交给下面的 catch 统一打印完整错误对象
+    if (error) throw error;
+
+    return result;
+  } catch (err) {
+    // 5) catch 错误时，打印完整的 error 对象（含 code / message / details / hint）
+    console.error('Supabase 报错详情:', err);
+    throw err;
   }
-  return data;     // { id, content, mood, wants_reply, sealed_until, created_at }
 }
 
 /**
  * 捞瓶子：从 bottles 表随机取一条
  * 原理：先统计总行数 → 生成随机偏移量 → 只取该偏移处的那一行（全程只传一条数据，省流量）
+ * 查询一律使用 select("*")，对表里有哪些列完全不敏感，避免因缺列而 400
  * @returns {Promise<object|null>} 瓶子对象（读 .content 即内容）；空海时返回 null
  */
 async function getRandomBottle() {
-  // 第 1 步：head 请求只取行数，不下载数据
-  var { count, error: countError } = await sb
-    .from("bottles")
-    .select("*", { count: "exact", head: true });
-  if (countError) {
-    console.error('Supabase 报错详情:', countError);
-    throw new Error("统计瓶子数失败：" + countError.message);
-  }
-  if (!count) return null;                          // 海里一个瓶子也没有
+  try {
+    // 第 1 步：head 请求只取行数，不下载数据
+    var { count, error: countError } = await sb
+      .from("bottles")
+      .select("*", { count: "exact", head: true });
+    if (countError) throw countError;
+    if (!count) return null;                        // 海里一个瓶子也没有
 
-  // 第 2 步：在 [0, count-1] 里随机一个偏移
-  var offset = Math.floor(Math.random() * count);
+    // 第 2 步：在 [0, count-1] 里随机一个偏移
+    var offset = Math.floor(Math.random() * count);
 
-  // 第 3 步：range(offset, offset) 表示「从第 offset 行取到第 offset 行」，即只要这一条
-  var { data, error } = await sb
-    .from("bottles")
-    .select("id, content, mood, wants_reply, created_at")
-    .range(offset, offset)
-    .maybeSingle();                                 // 0 条返回 null 而不报错
-  if (error) {
-    console.error('Supabase 报错详情:', error);
-    throw new Error("捞瓶失败：" + error.message);
+    // 第 3 步：range(offset, offset) = 只取第 offset 行；maybeSingle 在 0 条时返回 null 而不报错
+    var { data, error } = await sb
+      .from("bottles")
+      .select("*")
+      .range(offset, offset)
+      .maybeSingle();
+    if (error) throw error;
+    return data;                                    // 用 data.content 读瓶子内容
+  } catch (err) {
+    // catch 时打印完整错误对象
+    console.error('Supabase 报错详情:', err);
+    throw err;
   }
-  return data;
 }
 
 /** 把云端行映射成本地瓶子结构，让现有 UI（信纸卡片、抱抱、回复）无需改动即可渲染 */
 function cloudToLocal(row) {
   if (!row) return null;
+  // 表里没有 id 列时退化为随机后缀，避免所有云端瓶都叫 "cloud-undefined" 互相顶掉
+  var rid = (row.id != null) ? row.id : ("anon-" + Math.random().toString(36).slice(2, 9));
   return {
-    id: "cloud-" + row.id,
+    id: "cloud-" + rid,
     authorId: "cloud-anon",
     content: row.content,
-    mood: MOODS[row.mood] ? row.mood : "other",
+    mood: MOODS[row.mood] ? row.mood : "other",     // 缺列时按「其他」情绪渲染
     skin: "skin-default",
     hugs: 0,
     huggedBy: [],
@@ -822,10 +830,12 @@ function cloudToLocal(row) {
 async function cloudPing() {
   if (!sb) { store.cloudMode = "本地模式（未加载云端 SDK）"; return; }
   try {
-    var { error } = await sb.from("bottles").select("id", { head: true, count: "exact" }).limit(1);
+    // 用 select("*") + head 探测：不依赖表里存在任何特定列（包括 id）
+    var { error } = await sb.from("bottles").select("*", { head: true }).limit(1);
     if (error) throw error;
     store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步";
   } catch (e) {
+    console.error('Supabase 报错详情:', e);
     store.cloudMode = "🐚 离线模式 · 仅本地存储";
   }
 }
@@ -903,7 +913,7 @@ function createBottle(input) {
         时间胶囊（sealedUntil）要等开启后才该被捞到，故暂不上传。
         同步失败不影响本地体验，仅更新页脚连接状态。 */
   if (sb && input.target === "ocean" && !input.sealedUntil) {
-    throwBottle(input.content, { mood: input.mood, wants_reply: input.wantsReply })
+    throwBottle(input.content)
       .then(function () { store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步"; })
       .catch(function (err) {
         // ☁️ 云端同步失败的兜底处理：本地瓶子不受影响，页脚切回离线模式
