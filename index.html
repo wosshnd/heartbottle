@@ -889,11 +889,23 @@ function energyTitle(energy) {
   return title;
 }
 
-/* ---------------- AI 辅助 ---------------- */
+/* ------------------------------------------------------------------
+   AI 接入配置 · 阿里云百炼（DashScope）Qwen-Turbo
+   ------------------------------------------------------------------
+   ⚠️ 安全提示（务必阅读）：
+   1. 下方 apiKey 目前是「示例占位值」，请替换为你在百炼控制台创建的
+      真实 API Key，否则 AI 功能会自动回退到本地话术库。
+   2. 生产环境不要把 Key 硬编码在前端代码里——任何人打开网页源码都能
+      看到它。推荐做法二选一：
+      - 把 Key 放进环境变量 / 服务端，前端经由你自己的后端或 Supabase
+        Edge Function 中转调用百炼 API（Key 永不下发到浏览器）；
+      - 或在百炼控制台为该 Key 配置 Referer / IP 白名单，只允许你的
+        网站域名调用，即使 Key 泄露也能把被盗用的风险降到最低。
+   ------------------------------------------------------------------ */
 var AI_CONFIG = {
-  apiKey: "", /* ← 填入你的 API Key 即接入真实大模型，否则使用本地话术库 */
-  apiUrl: "https://api.openai.com/v1/chat/completions",
-  model: "gpt-4o-mini"
+  apiKey: "sk-ws-H.EYDEYHE.LEYI.MEQCIBr18cqWlcqK92FCuOe_K5waBrsw0a84wqwS7bAkjhUfAiAoNnGAOuC31hNG9oELZzRvY37nLY8tZrICRrcp8bOVMA", /* ⚠️ 示例占位，请替换为你的真实 API Key */
+  apiUrl: "https://ws-k3n8rx8ilxgfn021.cn-beijing.maas.aliyuncs.com/compatible-mode/v1/chat/completions", /* Base URL + /chat/completions */
+  model: "qwen-turbo"
 };
 var AI_SYSTEM = "你是一位温暖、共情力强的心理支持伙伴，正在帮助一名学生回复另一个学生写在漂流瓶里的心事。\n请按三种风格各写一条 60 字以内的中文回复：\n1. gentle（温柔陪伴型）：侧重倾听与陪伴，表达\"我在\"。\n2. encourage（鼓励支持型）：肯定对方已有的努力与力量。\n3. practical（实用建议型）：给一个具体、很小、今天就能做的行动。\n硬性要求：避免说教、指责和过度承诺；不许说\"这没什么大不了\"、\"你想多了\"、\"你应该...\"、\"一定会好起来的\"这类空话。\n输出格式：返回 JSON 对象 { \"gentle\": string, \"encourage\": string, \"practical\": string }。";
 var AI_BANK = {
@@ -952,7 +964,7 @@ function mockReplies(mood) {
 }
 
 /* ---------------- 🌳 AI 树洞解读：保证每个瓶子至少收到一份回应 ---------------- */
-var TREEHOLE_SYSTEM = "你是一个安静的树洞。请认真阅读对方写在漂流瓶里的心事，用第一人称写一段 80-120 字的回应。\n要求：先接住情绪（让对方感到被听见），再轻轻托住（给予陪伴而非答案）。\n禁止：说教、指责、给空洞的鸡汤、说\"你应该\"\"这没什么\"\"想开点\"。\n直接输出回应文字本身，不要任何前缀、引号或解释。";
+var TREEHOLE_SYSTEM = "你是一个温柔、共情力极强的心理倾听者。回复要简短（50字内）、温暖、不评判。\n直接输出回应文字本身，不要任何前缀、引号或解释。";
 var TREEHOLE_BANK = {
   study: [
     "我听见了，被排名和作业追着跑的你，真的好累。你已经很努力了，这一点我看得很清楚。今晚不用逼自己马上振作，允许自己先喘口气。明天的事明天再说，此刻的你，值得被温柔对待。我会一直在这里，听你说。",
