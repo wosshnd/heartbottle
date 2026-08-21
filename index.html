@@ -1031,6 +1031,111 @@ var SUPABASE_CONFIG = {
   key: "sb_publishable_VdHh5hU4KUngMlNWQdnQXQ_aS2743xP"
 };
 
+/**
+ * =====================================================================
+ * 🔒 数据库安全保护脚本
+ * 请在 Supabase SQL Editor 中执行以下 SQL 来启用行级安全 (RLS) 和访问策略
+ * 
+ * 【重要】执行顺序：
+ * 1. 先执行所有 CREATE POLICY 语句
+ * 2. 再执行 ENABLE ROW LEVEL SECURITY 语句
+ * 3. 最后验证策略是否生效
+ * 
+ * 【安全说明】
+ * - 启用 RLS 后，所有数据库操作都必须通过策略验证
+ * - 匿名用户只能执行明确允许的操作
+ * - 防止恶意用户直接调用 API 进行未授权访问
+ * =====================================================================
+ * 
+ * -- ==================== bottles 表保护 ====================
+ * -- 启用行级安全
+ * ALTER TABLE public.bottles ENABLE ROW LEVEL SECURITY;
+ * 
+ * -- 策略 1: 允许匿名用户读取所有瓶子（捞瓶子功能）
+ * CREATE POLICY "anon_select_bottles" ON public.bottles
+ *   FOR SELECT USING (true);
+ * 
+ * -- 策略 2: 允许匿名用户插入新瓶子（抛瓶子功能）
+ * CREATE POLICY "anon_insert_bottles" ON public.bottles
+ *   FOR INSERT WITH CHECK (true);
+ * 
+ * -- 策略 3: 禁止匿名用户更新或删除他人瓶子（安全保护）
+ * -- 如需允许删除自己发布的瓶子，需要添加 user_id 字段并修改此策略
+ * CREATE POLICY "deny_anon_update_bottles" ON public.bottles
+ *   FOR UPDATE USING (false);
+ * 
+ * CREATE POLICY "deny_anon_delete_bottles" ON public.bottles
+ *   FOR DELETE USING (false);
+ * 
+ * -- ==================== replies 表保护 ====================
+ * -- 启用行级安全
+ * ALTER TABLE public.replies ENABLE ROW LEVEL SECURITY;
+ * 
+ * -- 策略 1: 允许匿名用户读取所有回复
+ * CREATE POLICY "anon_select_replies" ON public.replies
+ *   FOR SELECT USING (true);
+ * 
+ * -- 策略 2: 允许匿名用户插入新回复（写回复功能）
+ * CREATE POLICY "anon_insert_replies" ON public.replies
+ *   FOR INSERT WITH CHECK (true);
+ * 
+ * -- 策略 3: 禁止匿名用户更新或删除他人回复
+ * CREATE POLICY "deny_anon_update_replies" ON public.replies
+ *   FOR UPDATE USING (false);
+ * 
+ * CREATE POLICY "deny_anon_delete_replies" ON public.replies
+ *   FOR DELETE USING (false);
+ * 
+ * -- ==================== users 表保护 ====================
+ * -- 启用行级安全
+ * ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+ * 
+ * -- 策略 1: 禁止匿名用户读取用户信息（隐私保护）
+ * CREATE POLICY "deny_anon_select_users" ON public.users
+ *   FOR SELECT USING (false);
+ * 
+ * -- 策略 2: 允许匿名用户注册（插入自己的用户记录）
+ * -- 实际使用时应配合 auth.uid() 验证
+ * CREATE POLICY "anon_insert_users" ON public.users
+ *   FOR INSERT WITH CHECK (true);
+ * 
+ * -- 策略 3: 禁止匿名用户更新或删除用户信息
+ * CREATE POLICY "deny_anon_update_users" ON public.users
+ *   FOR UPDATE USING (false);
+ * 
+ * CREATE POLICY "deny_anon_delete_users" ON public.users
+ *   FOR DELETE USING (false);
+ * 
+ * -- ==================== notices 表保护 ====================
+ * -- 启用行级安全
+ * ALTER TABLE public.notices ENABLE ROW LEVEL SECURITY;
+ * 
+ * -- 策略 1: 允许匿名用户读取通知
+ * CREATE POLICY "anon_select_notices" ON public.notices
+ *   FOR SELECT USING (true);
+ * 
+ * -- 策略 2: 仅允许系统插入通知（禁止匿名用户直接插入）
+ * CREATE POLICY "system_insert_notices" ON public.notices
+ *   FOR INSERT WITH CHECK (false);
+ * 
+ * -- 策略 3: 禁止匿名用户更新或删除通知
+ * CREATE POLICY "deny_anon_update_notices" ON public.notices
+ *   FOR UPDATE USING (false);
+ * 
+ * CREATE POLICY "deny_anon_delete_notices" ON public.notices
+ *   FOR DELETE USING (false);
+ * 
+ * -- ==================== 验证策略 ====================
+ * -- 查看当前所有策略
+ * SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual, with_check
+ * FROM pg_policies WHERE schemaname = 'public';
+ * 
+ * -- 查看表的 RLS 状态
+ * SELECT relname, relrowsecurity, relforcerowsecurity
+ * FROM pg_class WHERE relnamespace = 'public'::regnamespace;
+ * =====================================================================
+ */
+
 /** 初始化客户端；CDN 加载失败时 sb 为 null，后续逻辑自动走本地 */
 var sb = (window.supabase && window.supabase.createClient)
   ? window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key)
