@@ -476,6 +476,8 @@ img,svg{display:block}
 </head>
 <body>
 <div id="app"></div>
+<!-- Supabase JS v2（UMD 全局版，挂载到 window.supabase） -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/vue@3.5.13/dist/vue.global.prod.js"></script>
 <script>
 "use strict";
@@ -698,6 +700,125 @@ function weeklyQuote(stats) {
   return base;
 }
 
+/* =====================================================================
+   ☁️  Supabase 云端数据层（bottles 表）
+   ---------------------------------------------------------------------
+   · 通过 CDN 引入 supabase-js v2（见 <head> 上方），全局对象 window.supabase
+   · 使用「可发布密钥 publishable key」初始化，可安全地放在前端代码里
+   · 策略：云端优先、本地兜底 —— 网络可用时抛瓶写入云端、捞瓶从云端随机读取；
+     断网或表未建好时自动退回 localStorage，页面永远不会白屏
+
+   首次使用请先在 Supabase 控制台 SQL Editor 里执行以下建表语句：
+
+     create table public.bottles (
+       id          uuid primary key default gen_random_uuid(),
+       content     text        not null,                 -- 瓶中信内容
+       mood        text        default 'other',          -- 情绪标签
+       wants_reply boolean     default true,             -- 是否希望收到回信
+       sealed_until timestamptz,                         -- 时间胶囊开启时间（可空）
+       created_at  timestamptz default now()             -- 抛瓶时间
+     );
+
+     -- 开启行级安全（RLS）并放行匿名读写（演示用，生产环境请收紧策略）
+     alter table public.bottles enable row level security;
+     create policy "allow anon read"   on public.bottles for select using (true);
+     create policy "allow anon insert" on public.bottles for insert with check (true);
+   ===================================================================== */
+
+/** Supabase 项目配置 —— 换项目时只需改这里 */
+var SUPABASE_CONFIG = {
+  url: "https://qleibbpnbynwhwncibzh.supabase.co",
+  // 注意：你提供的 Key 末尾多了「里]」两个字符（疑似输入法误触），已按清理后的值写入。
+  // 如果控制台里的 Key 与此不同，改这一行即可。
+  key: "sb_publishable_VdHh5hU4KUngMlNWQdnQXQ_aS2743xP"
+};
+
+/** 初始化客户端；CDN 加载失败时 sb 为 null，后续逻辑自动走本地 */
+var sb = (window.supabase && window.supabase.createClient)
+  ? window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key)
+  : null;
+
+/**
+ * 抛瓶子：向 bottles 表插入一条数据
+ * @param {string} content 瓶中信内容
+ * @param {object} [extra] 可选字段：{ mood, wants_reply, sealed_until }
+ * @returns {Promise<object>} 插入成功后返回数据库里那一行（含服务端生成的 id / created_at）
+ * @throws  插入失败（如 RLS 拒绝、断网）时抛出 Error，由调用方决定降级策略
+ */
+async function throwBottle(content, extra) {
+  extra = extra || {};
+  var { data, error } = await sb
+    .from("bottles")
+    .insert({
+      content: content,                     // 必填：瓶子内容
+      mood: extra.mood || "other",          // 情绪标签
+      wants_reply: extra.wants_reply !== false,
+      sealed_until: extra.sealed_until || null
+    })
+    .select()      // v2 默认返回 minimal，加 select() 才能拿回刚插入的行
+    .single();     // 只插入了一条，所以取单行
+
+  if (error) throw new Error("抛瓶失败：" + error.message);
+  return data;     // { id, content, mood, wants_reply, sealed_until, created_at }
+}
+
+/**
+ * 捞瓶子：从 bottles 表随机取一条
+ * 原理：先统计总行数 → 生成随机偏移量 → 只取该偏移处的那一行（全程只传一条数据，省流量）
+ * @returns {Promise<object|null>} 瓶子对象（读 .content 即内容）；空海时返回 null
+ */
+async function getRandomBottle() {
+  // 第 1 步：head 请求只取行数，不下载数据
+  var { count, error: countError } = await sb
+    .from("bottles")
+    .select("*", { count: "exact", head: true });
+  if (countError) throw new Error("统计瓶子数失败：" + countError.message);
+  if (!count) return null;                          // 海里一个瓶子也没有
+
+  // 第 2 步：在 [0, count-1] 里随机一个偏移
+  var offset = Math.floor(Math.random() * count);
+
+  // 第 3 步：range(offset, offset) 表示「从第 offset 行取到第 offset 行」，即只要这一条
+  var { data, error } = await sb
+    .from("bottles")
+    .select("id, content, mood, wants_reply, created_at")
+    .range(offset, offset)
+    .maybeSingle();                                 // 0 条返回 null 而不报错
+  if (error) throw new Error("捞瓶失败：" + error.message);
+  return data;
+}
+
+/** 把云端行映射成本地瓶子结构，让现有 UI（信纸卡片、抱抱、回复）无需改动即可渲染 */
+function cloudToLocal(row) {
+  if (!row) return null;
+  return {
+    id: "cloud-" + row.id,
+    authorId: "cloud-anon",
+    content: row.content,
+    mood: MOODS[row.mood] ? row.mood : "other",
+    skin: "skin-default",
+    hugs: 0,
+    huggedBy: [],
+    wantsReply: row.wants_reply !== false,
+    target: "ocean",
+    sealedUntil: null,
+    openedNoticeSent: true,
+    createdAt: row.created_at || nowIso()
+  };
+}
+
+/** 启动时探测一次云端连通性，更新页脚的连接状态 */
+async function cloudPing() {
+  if (!sb) { store.cloudMode = "本地模式（未加载云端 SDK）"; return; }
+  try {
+    var { error } = await sb.from("bottles").select("id", { head: true, count: "exact" }).limit(1);
+    if (error) throw error;
+    store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步";
+  } catch (e) {
+    store.cloudMode = "🐚 离线模式 · 仅本地存储";
+  }
+}
+
 /* ---------------- 数据仓库（localStorage 模拟四张表） ---------------- */
 var DB_KEY = "xlpb.db.v1";
 var _cache = null;
@@ -766,10 +887,20 @@ function createBottle(input) {
   var bottle = { id: dbUid(), authorId: u.id, content: input.content, mood: input.mood, skin: u.skin, hugs: 0, huggedBy: [], wantsReply: input.wantsReply, target: input.target, sealedUntil: input.sealedUntil, openedNoticeSent: !input.sealedUntil, createdAt: nowIso() };
   dbLoad().bottles.push(bottle);
   dbAddEnergy(ENERGY_RULES.throw);
+
+  /* ☁️ 云端同步：只有「立刻漂给陌生人」的普通瓶子才进海；
+        时间胶囊（sealedUntil）要等开启后才该被捞到，故暂不上传。
+        同步失败不影响本地体验，仅更新页脚连接状态。 */
+  if (sb && input.target === "ocean" && !input.sealedUntil) {
+    throwBottle(input.content, { mood: input.mood, wants_reply: input.wantsReply })
+      .then(function () { store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步"; })
+      .catch(function () { store.cloudMode = "🐚 离线模式 · 仅本地存储"; });
+  }
   return bottle;
 }
 function toggleHug(bottleId) {
   var b = getBottle(bottleId); var id = dbMe().id;
+  if (!b) return { bottle: { hugs: 0, huggedBy: [] }, hugged: false };  // 云端捞到的瓶子不在本地库，抱抱只记在界面
   var idx = b.huggedBy.indexOf(id);
   if (idx >= 0) { b.huggedBy.splice(idx, 1); b.hugs = Math.max(0, b.hugs - 1); dbSave(); return { bottle: b, hugged: false }; }
   b.huggedBy.push(id); b.hugs += 1; dbAddEnergy(ENERGY_RULES.hug); dbSave();
@@ -927,7 +1058,8 @@ var store = reactive({
   toolboxReason: null,
   catchInitial: null,
   catchKey: 0,
-  unread: 0
+  unread: 0,
+  cloudMode: "☁️ 正在连接云端…"   // Supabase 连接状态，由 cloudPing() 更新
 });
 var _toastId = 1;
 function toast(type, msg) {
@@ -1340,8 +1472,21 @@ var CatchView = {
     var usedInitial = false;
     function fetchOne(excludeId) {
       phase.value = "fetching"; composer.value = ""; chosenStyle.value = null; aiOpen.value = false; aiReplies.value = null;
-      setTimeout(function () {
-        var b = (!usedInitial && props.initialBottleId) ? (getBottle(props.initialBottleId) || null) : catchRandom(excludeId);
+      setTimeout(async function () {
+        var b = null;
+        if (!usedInitial && props.initialBottleId) {
+          b = getBottle(props.initialBottleId) || null;          // 从通知点进来的指定瓶子
+        } else {
+          /* ☁️ 云端优先：先请 Supabase 随机捞一条；
+             空海 / 断网 / 表未建好 → 自动退回本地海区的瓶子 */
+          if (sb) {
+            try {
+              var row = await getRandomBottle();
+              if (row) b = cloudToLocal(row);
+            } catch (e) { store.cloudMode = "🐚 离线模式 · 仅本地存储"; }
+          }
+          if (!b) b = catchRandom(excludeId);
+        }
         usedInitial = true;
         if (!b) { bottle.value = null; phase.value = "empty"; return; }
         dbAddEnergy(ENERGY_RULES.catch); refreshUser();
@@ -1678,6 +1823,7 @@ var App = {
   setup: function () {
     store.user = Object.assign({}, dbBoot());
     store.unread = unreadCount();
+    cloudPing();   // ☁️ 启动时探测 Supabase 连通性，更新页脚连接状态
     var NAV = [ { id: "home", label: "首页", icon: "home" }, { id: "throw", label: "抛瓶", icon: "plus" }, { id: "catch", label: "捞瓶", icon: "bottle" }, { id: "space", label: "我的", icon: "user" } ];
     var themeClass = computed(function () { return "theme-" + (store.user ? store.user.theme : "dawn"); });
     var bgStyle = computed(function () { return { background: "linear-gradient(180deg, var(--sky3) 0%, #ebe6d8 360px, #ebe6d8 100%)" }; });
@@ -1691,7 +1837,7 @@ var App = {
     <ThrowView v-else-if="store.view === \'throw\'" @open-toolbox="openToolbox" />\
     <CatchView v-else-if="store.view === \'catch\'" :key="store.catchKey" :initial-bottle-id="store.catchInitial" @open-toolbox="openToolbox" />\
     <SpaceView v-else-if="store.view === \'space\'" @open-bottle="openBottleById" />\
-    <footer class="footer-note">心灵漂流瓶 · 匿名同伴互助演示版<br/>所有数据只保存在你的浏览器本地 · 数据结构已为接入 Supabase 做好准备<br/>若你或身边的人正处于危机中，请拨打 12355 或当地心理援助热线</footer>\
+    <footer class="footer-note">心灵漂流瓶 · 匿名同伴互助演示版<br/>{{ store.cloudMode }}<br/>抛瓶写入云端 bottles 表 · 捞瓶从云端随机读取 · 断网自动回退本地<br/>若你或身边的人正处于危机中，请拨打 12355 或当地心理援助热线</footer>\
   </main>\
   <button class="fab" aria-label="打开急救工具箱：呼吸引导、白噪音与心理热线" @click="openToolbox()"><span class="ring anim-pulse-ring" aria-hidden="true"></span><span style="position:relative" v-html="ic(\'wind\', \'ic-xl\')"></span></button>\
   <nav class="bottomnav" aria-label="主导航">\
