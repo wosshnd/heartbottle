@@ -758,7 +758,12 @@ async function throwBottle(content, extra) {
     .select()      // v2 默认返回 minimal，加 select() 才能拿回刚插入的行
     .single();     // 只插入了一条，所以取单行
 
-  if (error) throw new Error("抛瓶失败：" + error.message);
+  if (error) {
+    // 📋 打印完整错误对象（含 code / message / details / hint），方便在控制台定位
+    //    常见 code：42P01 = 表不存在；PGRST204/42703 = 列名不匹配；42501 = 权限不足
+    console.error('Supabase 报错详情:', error);
+    throw new Error("抛瓶失败：" + error.message);
+  }
   return data;     // { id, content, mood, wants_reply, sealed_until, created_at }
 }
 
@@ -772,7 +777,10 @@ async function getRandomBottle() {
   var { count, error: countError } = await sb
     .from("bottles")
     .select("*", { count: "exact", head: true });
-  if (countError) throw new Error("统计瓶子数失败：" + countError.message);
+  if (countError) {
+    console.error('Supabase 报错详情:', countError);
+    throw new Error("统计瓶子数失败：" + countError.message);
+  }
   if (!count) return null;                          // 海里一个瓶子也没有
 
   // 第 2 步：在 [0, count-1] 里随机一个偏移
@@ -784,7 +792,10 @@ async function getRandomBottle() {
     .select("id, content, mood, wants_reply, created_at")
     .range(offset, offset)
     .maybeSingle();                                 // 0 条返回 null 而不报错
-  if (error) throw new Error("捞瓶失败：" + error.message);
+  if (error) {
+    console.error('Supabase 报错详情:', error);
+    throw new Error("捞瓶失败：" + error.message);
+  }
   return data;
 }
 
@@ -894,7 +905,11 @@ function createBottle(input) {
   if (sb && input.target === "ocean" && !input.sealedUntil) {
     throwBottle(input.content, { mood: input.mood, wants_reply: input.wantsReply })
       .then(function () { store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步"; })
-      .catch(function () { store.cloudMode = "🐚 离线模式 · 仅本地存储"; });
+      .catch(function (err) {
+        // ☁️ 云端同步失败的兜底处理：本地瓶子不受影响，页脚切回离线模式
+        console.error('Supabase 报错详情:', err);
+        store.cloudMode = "🐚 离线模式 · 仅本地存储";
+      });
   }
   return bottle;
 }
@@ -1483,7 +1498,10 @@ var CatchView = {
             try {
               var row = await getRandomBottle();
               if (row) b = cloudToLocal(row);
-            } catch (e) { store.cloudMode = "🐚 离线模式 · 仅本地存储"; }
+            } catch (e) {
+              console.error('Supabase 报错详情:', e);
+              store.cloudMode = "🐚 离线模式 · 仅本地存储";
+            }
           }
           if (!b) b = catchRandom(excludeId);
         }
