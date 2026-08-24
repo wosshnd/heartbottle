@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { action, content, mood, user_id } = req.body;
+    const { action, content, mood, user_id, id, likes, drawing } = req.body;
 
     if (!action) {
       return res.status(400).json({ error: 'Action is required' });
@@ -42,16 +42,19 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Content is required for throw action' });
       }
 
+      const insertData = {
+        content: content,
+        mood: mood || 'neutral',
+        user_id: user_id || null,
+        created_at: new Date().toISOString()
+      };
+      if (drawing !== undefined && drawing !== null) {
+        insertData.drawing = drawing;
+      }
+
       const { data, error } = await supabase
         .from('bottles')
-        .insert([
-          {
-            content: content,
-            mood: mood || 'neutral',
-            user_id: user_id || null,
-            created_at: new Date().toISOString()
-          }
-        ])
+        .insert([insertData])
         .select();
 
       if (error) throw error;
@@ -75,6 +78,36 @@ module.exports = async (req, res) => {
         result = { success: true, data: data[randomIndex] };
       }
 
+    } else if (action === 'like') {
+      // 点赞：更新 likes 字段
+      if (!id || likes === undefined) {
+        return res.status(400).json({ error: 'id and likes are required for like action' });
+      }
+
+      const { data, error } = await supabase
+        .from('bottles')
+        .update({ likes: likes })
+        .eq('id', id)
+        .select();
+
+      if (error) throw error;
+      result = { success: true, data: data[0] };
+
+    } else if (action === 'release') {
+      // 释放：标记 released = true
+      if (!id) {
+        return res.status(400).json({ error: 'id is required for release action' });
+      }
+
+      const { data, error } = await supabase
+        .from('bottles')
+        .update({ released: true })
+        .eq('id', id)
+        .select();
+
+      if (error) throw error;
+      result = { success: true, data: data[0] };
+
     } else {
       return res.status(400).json({ error: 'Invalid action' });
     }
@@ -83,9 +116,9 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Supabase error:', error);
-    return res.status(500).json({ 
-      error: 'Internal server error', 
-      details: error.message 
+    return res.status(500).json({
+      error: 'Internal server error',
+      details: error.message
     });
   }
 };
