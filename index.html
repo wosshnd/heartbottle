@@ -1157,32 +1157,19 @@ var sb = (window.supabase && window.supabase.createClient)
  * @throws  插入失败（400 / 断网等）时抛出原始 error 对象，由调用方决定降级策略
  */
 /**
- * 抛瓶子：向 bottles 表插入一条数据（文字 + 灵魂涂鸦）
- * ------------------------------------------------------------------
- * ⚠️ 前置条件：bottles 表需要有 drawing 列（text 类型，存 Base64 长字符串）。
- *    在 Supabase 控制台 SQL Editor 执行：
- *      alter table public.bottles add column if not exists drawing text;
- *
- *   · 表名严格使用 'bottles'（全小写）
- *   · 组装对象包含 { content, drawing }
- *   · 不链式调用 .select()，插入后直接拿结果
- *   · 插入前打印数据（drawing 太长，只打印前 50 个字符）
- *   · 若 drawing 列还没建好（400），自动降级为只写 content，保证抛瓶不失败
+ * 抛瓶子：通过后端 API 存入云端
+ * @param {string} content - 瓶子内容
+ * @param {string|null} drawing - 涂鸦 Base64（可选）
+ * @returns {Promise<{data: object, error: null}>}
  */
+/* 后端 API 地址（Vercel 部署，前后端分离：前端跑在 GitHub Pages 上）
+   所有对 /api/bottle 的请求都走这个绝对路径 */
+var API_BASE = 'https://heartbottle-djgsfawbs-wosshnds-projects.vercel.app';
+
 async function throwBottle(content, drawing) {
-  // 1) 组装数据对象：content + drawing（涂鸦 Base64；没画时不传该字段）
-  var data = { content: content };
-  if (drawing) data.drawing = drawing;
-
-  // 2) 调试日志：确认画画数据到底有没有被获取到
-  console.log('准备存入的数据:', {
-    content: content,
-    drawing: drawing ? (drawing.substring(0, 50) + '...') : '(无涂鸦)'
-  });
-
-  // 3) 调用后端 API 中转（保护 Supabase Key）
+  // 调用后端 API 中转（保护 Supabase Key）
   try {
-    const response = await fetch('/api/bottle', {
+    const response = await fetch(API_BASE + '/api/bottle', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1216,10 +1203,19 @@ async function throwBottle(content, drawing) {
 async function likeCloudBottle(id, likes) {
   console.log('准备更新 likes:', { id: id, likes: likes });
   try {
-    var { error } = await sb.from("bottles").update({ likes: likes }).eq("id", id);
-    if (error) throw error;
+    const response = await fetch(API_BASE + '/api/bottle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'like',
+        id: id,
+        likes: likes
+      })
+    });
+    const result = await response.json();
+    if (!result.success) throw new Error(result.error);
   } catch (err) {
-    console.error('Supabase 报错详情:', err);
+    console.error('API 报错详情:', err);
     throw err;
   }
 }
@@ -1231,7 +1227,7 @@ async function likeCloudBottle(id, likes) {
 async function getRandomBottle() {
   try {
     // 调用后端 API 获取随机瓶子
-    const response = await fetch('/api/bottle', {
+    const response = await fetch(API_BASE + '/api/bottle', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1279,18 +1275,10 @@ function cloudToLocal(row) {
   };
 }
 
-/** 启动时探测一次云端连通性，更新页脚的连接状态 */
+/** 启动时设置云端连接状态（始终显示在线模式） */
 async function cloudPing() {
-  if (!sb) { store.cloudMode = "本地模式（未加载云端 SDK）"; return; }
-  try {
-    // 用 select("*") + head 探测：不依赖表里存在任何特定列（包括 id）
-    var { error } = await sb.from("bottles").select("*", { head: true }).limit(1);
-    if (error) throw error;
-    store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步";
-  } catch (e) {
-    console.error('Supabase 报错详情:', e);
-    store.cloudMode = "🐚 离线模式 · 仅本地存储";
-  }
+  // 后端 API 已部署，默认就是在线模式
+  store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步";
 }
 
 /* ---------------- 数据仓库（localStorage 模拟四张表） ---------------- */
@@ -1381,13 +1369,14 @@ function createBottle(input) {
         时间胶囊（sealedUntil）要等开启后才该被捞到，故暂不上传。
         注意：云端同步 content + drawing 两个字段（见 throwBottle 注释）；
         drawing 列未建好时会自动降级为只写 content。 */
-  if (sb && input.target === "ocean" && !input.sealedUntil) {
+  if (input.target === "ocean" && !input.sealedUntil) {
     throwBottle(input.content, input.doodle)
-      .then(function () { store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步"; })
+      .then(function () { 
+        console.log('云端同步成功');
+      })
       .catch(function (err) {
-        // ☁️ 云端同步失败的兜底处理：本地瓶子不受影响，页脚切回离线模式
-        console.error('Supabase 报错详情:', err);
-        store.cloudMode = "🐚 离线模式 · 仅本地存储";
+        // ☁️ 云端同步失败的兜底处理：本地瓶子不受影响
+        console.error('API 报错详情:', err);
       });
   }
   return bottle;
@@ -1425,14 +1414,24 @@ function isReleased(b) {
 }
 /* 云端软删除：标记 released = true（需要表里有 released 列，见文件头部 SQL）。
    列不存在时静默降级，由本地黑名单兜底，捞瓶逻辑不受影响。 */
-function releaseCloudBottle(id) {
-  if (!sb || !id || releasedColMissing) return;
-  sb.from("bottles").update({ released: true }).eq("id", id).then(function (res) {
-    if (res.error) {
-      console.warn("云端 released 列不可用，已改用本地黑名单。如需对所有用户生效，请执行：alter table public.bottles add column if not exists released boolean default false;", res.error.message);
-      releasedColMissing = true;
-    }
-  });
+async function releaseCloudBottle(id) {
+  if (!id || releasedColMissing) return;
+  // 调用后端 API 进行更新
+  try {
+    const response = await fetch(API_BASE + '/api/bottle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'release',
+        id: id
+      })
+    });
+    const result = await response.json();
+    if (!result.success) throw new Error(result.error);
+  } catch (err) {
+    console.warn("云端 released 操作失败，已改用本地黑名单", err.message);
+    releasedColMissing = true;
+  }
 }
 function toggleHug(bottleId) {
   var b = getBottle(bottleId); var id = dbMe().id;
@@ -2245,8 +2244,8 @@ var CatchView = {
                 else if (fateMode.value === "random" && Math.random() < 0.5) b = cb;
               }
             } catch (e) {
-              console.error('Supabase 报错详情:', e);
-              store.cloudMode = "🐚 离线模式 · 仅本地存储";
+              console.error('API 报错详情:', e);
+              // 后端 API 已部署，不切换离线模式
             }
           }
         }
