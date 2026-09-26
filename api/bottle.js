@@ -28,7 +28,7 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const { action, content, mood, user_id, id, likes, drawing ,bottle_id} = req.body;
+    const { action, content, mood, user_id, id, likes, drawing } = req.body;
 
     if (!action) {
       return res.status(400).json({ error: 'Action is required' });
@@ -107,39 +107,7 @@ module.exports = async (req, res) => {
 
       if (error) throw error;
       result = { success: true, data: data[0] };
-    } else if (action === 'add_comment') {
-      // 添加评论：插入 comments 表
-      if (!bottle_id || !content) {
-        return res.status(400).json({ error: 'bottle_id and content are required for add_comment action' });
-      }
 
-      const { data, error } = await supabase
-        .from('comments')
-        .insert([{
-          bottle_id: bottle_id,
-          content: content
-        }]);
-
-      if (error) {
-          console.error('Insert failed:', error); // 打印错误方便调试
-          return res.status(500).json({ error: error.message }); // 返回 JSON 给前端
-        }
-      result = { success: true,  data[0] };
-
-    } else if (action === 'get_comments') {
-      // 获取评论：按时间正序返回该瓶子的所有评论
-      if (!bottle_id) {
-        return res.status(400).json({ error: 'bottle_id is required for get_comments action' });
-      }
-
-      const { data, error } = await supabase
-        .from('comments')
-        .select('*')
-        .eq('bottle_id', bottle_id)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-      result = { success: true,  data || [] };
     } else {
       return res.status(400).json({ error: 'Invalid action' });
     }
