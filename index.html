@@ -1276,7 +1276,28 @@ async function cloudPing() {
   // 后端 API 已部署，默认就是在线模式
   store.cloudMode = "☁️ 云端已连接 · 瓶子实时同步";
 }
-
+/* 💬 评论区：获取某只云端瓶子的全部评论（按时间正序） */
+async function getComments(bottleId) {
+const response = await fetch(API_BASE + '/api/bottle', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ action: 'get_comments', bottle_id: bottleId })
+});
+const result = await response.json();
+if (!response.ok || !result.success) throw new Error(result.details || result.error || 'Get comments failed');
+return result.data || [];
+}
+/* 💬 评论区：发表一条评论 */
+async function addComment(bottleId, content) {
+const response = await fetch(API_BASE + '/api/bottle', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ action: 'add_comment', bottle_id: bottleId, content: content })
+});
+const result = await response.json();
+if (!response.ok || !result.success) throw new Error(result.details || result.error || 'Add comment failed');
+return result.data;
+}
 /* ---------------- 数据仓库（localStorage 模拟四张表） ---------------- */
 var DB_KEY = "xlpb.db.v1";
 var _cache = null;
@@ -2167,6 +2188,36 @@ var CatchView = {
       if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
       typed.value = bottle.value.content; typing.value = false;
     }
+    var cloudComments = ref([]), commentText = ref(""), commentsLoading = ref(false), commentSending = ref(false);
+async function loadComments(cloudId) {
+  commentsLoading.value = true;
+  try {
+    cloudComments.value = await getComments(cloudId);
+  } catch (e) {
+    console.warn('拉取评论失败:', e.message);
+    cloudComments.value = [];
+  } finally {
+    commentsLoading.value = false;
+  }
+}
+async function sendComment() {
+  if (!bottle.value || !bottle.value.cloudId) return;
+  var t = commentText.value.trim();
+  if (t.length < 2) { toast("warn", "再多写几个字吧，让 TA 感受到你的温度"); return; }
+  if (commentSending.value) return;
+  commentSending.value = true;
+  try {
+    await addComment(bottle.value.cloudId, t);
+    commentText.value = "";
+    toast("ok", "评论已送达 💬");
+    await loadComments(bottle.value.cloudId);   // 成功后刷新评论列表
+  } catch (e) {
+    console.error('发送评论失败:', e);
+    toast("warn", "评论发送失败了，稍后再试试吧");
+  } finally {
+    commentSending.value = false;
+  }
+}
     onUnmounted(function () { if (typeTimer) clearInterval(typeTimer); });
     /* 🌊 分区（浅滩/深海） + 🔮 缘分匹配（随缘/同频/互补） */
     var zone = ref(0), fateMode = ref("random"), myMoodColor = ref(null), calmOpen = ref(false);
@@ -2215,6 +2266,7 @@ var CatchView = {
       phase.value = "fetching"; composer.value = ""; chosenStyle.value = null; aiOpen.value = false; aiReplies.value = null;
       cloudLiked.value = false; warmHearts.value = []; typed.value = ""; typing.value = false;
       treeholeOpen.value = false; treeholeText.value = "";
+       cloudComments.value = [];   // 💬 换瓶时先清空上一只瓶子的评论
       if (typeTimer) { clearInterval(typeTimer); typeTimer = null; }
       setTimeout(async function () {
         var b = null;
@@ -2249,6 +2301,9 @@ var CatchView = {
         if (!b) { bottle.value = null; phase.value = "empty"; return; }
         dbAddEnergy(ENERGY_RULES.catch); refreshUser();
         bottle.value = b; replies.value = listReplies(b.id); phase.value = "letter";
+        usedInitial = true;
+        /* 💬 捞到云端瓶 → 自动拉取该瓶的评论 */
+        if (b.fromCloud && b.cloudId) loadComments(b.cloudId);
         startTyping(b.content);   // ✍️ 像写信一样逐字展开
       }, 850);
     }
@@ -2370,8 +2425,9 @@ var CatchView = {
       typed: typed, typing: typing, skipTyping: skipTyping, glowColor: glowColor, likesCount: likesCount, warmed: warmed,
       warmHearts: warmHearts, sendWarmth: sendWarmth, moodColorOf: moodColorOf,
       zone: zone, fateMode: fateMode, myMoodColor: myMoodColor, calmOpen: calmOpen, setZone: setZone, enterDeep: enterDeep, setMyMood: setMyMood, setFate: setFate,
-      treeholeOpen: treeholeOpen, treeholeLoading: treeholeLoading, treeholeText: treeholeText, openTreeHole: openTreeHole, useTreeHole: useTreeHole, letGo: letGo,
-      moodColors: MOOD_COLORS, deepCost: ENERGY_RULES.deep, myEnergy: computed(function () { return dbMe().energy || 0; }),
+     treeholeOpen: treeholeOpen, treeholeLoading: treeholeLoading, treeholeText: treeholeText, openTreeHole: openTreeHole, useTreeHole: useTreeHole, letGo: letGo,
+      cloudComments: cloudComments, commentText: commentText, commentsLoading: commentsLoading, commentSending: commentSending, sendComment: sendComment,
+      moodColors: MOOD_COLORS, deepCost: ENERGY_RULES.deep, myEnergy: computed(function () { return dbMe().energy||0;}),
       fetchOne: fetchOne, submitReply: submitReply, openAi: openAi, pickStyle: pickStyle, like: like, hug: hug, confirmReport: confirmReport,
       warm: warm, liked: liked, reported: reported,
       styles: REPLY_STYLES, styleKeys: STYLE_KEYS, timeAgo: timeAgo, glassBottleSvg: glassBottleSvg, miniBottleSvg: miniBottleSvg, ic: ic, spinner: spinner, go: go,
@@ -2501,6 +2557,24 @@ var CatchView = {
           <span class="hearts"><svg v-for="h in (hearts[r.id] || [])" :key="h.id" viewBox="0 0 24 24" class="heart-float" :style="{ position:\'absolute\', bottom:\'100%\', left:\'50%\', marginLeft: h.x + \'px\', width: h.size + \'px\', animationDelay: h.delay + \'s\', color: h.hue === \'rose\' ? \'#ea9cb2\' : \'#f09f7d\' }" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21.2l7.8-7.8 1-1a5.5 5.5 0 0 0 0-7.8Z" fill="currentColor"/></svg></span>\
           <button class="like-btn" :class="{ on: liked(r) }" :disabled="r.reports >= 3" :aria-pressed="liked(r)" aria-label="感到温暖，点赞" @click="like(r)"><span v-html="ic(liked(r) ? \'heartFilled\' : \'heart\', \'ic-s\')"></span>感到温暖 · {{ r.likes }}</button>\
         </div>\
+      </div>\
+    </div>\
+  </div>\
+    /* 💬 云端瓶评论区 */\
+  <div v-if="bottle.fromCloud" class="reply-box card-soft anim-fade-up">\
+    <div class="reply-head"><span class="lbl">💬 评论区 · {{ cloudComments.length }} 条留言</span></div>\
+    <div v-if="commentsLoading" class="shimmer" style="height:56px;border-radius:14px;margin-top:12px" aria-hidden="true"></div>\
+    <template v-else>\
+      <p v-if="!cloudComments.length" style="margin-top:10px;font-size:12px;color:var(--ink-faint)">还没有人留言，来做第一个回应 TA 的人吧~</p>\
+      <div v-for="c in cloudComments" :key="c.id" class="reply-item card-soft" style="margin-top:8px">\
+        <div class="reply-meta"><span class="who">匿名海友 · {{ timeAgo(c.created_at) }}</span></div>\
+        <p class="reply-content">{{ c.content }}</p>\
+      </div>\
+    </template>\
+    <div style="margin-top:12px">\
+      <textarea class="textarea" rows="2" v-model="commentText" maxlength="100" aria-label="评论内容" placeholder="轻轻说一句，给漂流的 TA 听见…"></textarea>\
+      <div class="reply-actions"><span class="hint">评论会同步到这只瓶子的云端主页</span>\
+        <button class="btn btn-sea" :disabled="commentSending" @click="sendComment"><span v-if="commentSending" v-html="spinner(\'ic-m\')"></span><span v-else v-html="ic(\'send\', \'ic-m\')"></span>发送评论</button>\
       </div>\
     </div>\
   </div>\
