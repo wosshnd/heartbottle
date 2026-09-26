@@ -1,5 +1,3 @@
-console.log('Supabase URL:', process.env.SUPABASE_URL ? '存在' : '缺失');
-console.log('Supabase Key:', process.env.SUPABASE_KEY ? '存在' : '缺失');
 const { createClient } = require('@supabase/supabase-js');
 
 // 从环境变量获取配置 (Vercel 会自动注入)
@@ -120,10 +118,12 @@ module.exports = async (req, res) => {
         .insert([{
           bottle_id: bottle_id,
           content: content
-        }])
-        .select();
+        }]);
 
-      if (error) throw error;
+      if (error) {
+          console.error('Insert failed:', error); // 打印错误方便调试
+          return res.status(500).json({ error: error.message }); // 返回 JSON 给前端
+        }
       result = { success: true,  data[0] };
 
     } else if (action === 'get_comments') {
