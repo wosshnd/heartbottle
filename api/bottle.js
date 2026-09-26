@@ -1,3 +1,5 @@
+console.log('Supabase URL:', process.env.SUPABASE_URL ? '存在' : '缺失');
+console.log('Supabase Key:', process.env.SUPABASE_KEY ? '存在' : '缺失');
 const { createClient } = require('@supabase/supabase-js');
 
 // 从环境变量获取配置 (Vercel 会自动注入)
