@@ -117,8 +117,7 @@ module.exports = async (req, res) => {
         .from('comments')
         .insert([{
           bottle_id: bottle_id,
-          content: content,
-          created_at: new Date().toISOString()
+          content: content
         }])
         .select();
 
